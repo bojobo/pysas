@@ -11,6 +11,7 @@ from . import configutils
 from . import init_sas
 from .version import *
 from .odfcontrol import odfcontrol
+from .epatplotpy import epatplotpy
 
 __version__ = f'pysas - (pysas-{VERSION}) [{SAS_RELEASE}-{SAS_AKA}]'
 
