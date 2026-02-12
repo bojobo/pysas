@@ -33,6 +33,7 @@ from pathlib import Path
 
 # Third party imports
 from astropy.io import fits
+from astroquery.heasarc import Heasarc
 
 # Local application imports
 from pysas import sas_cfg
@@ -1253,6 +1254,36 @@ class FileMain:
         _ = self.get_SUM_SAS()
         self.find_event_list_files(print_output = self.output_to_terminal)
         self.find_rgs_spectra_files(print_output = self.output_to_terminal)
+
+    def get_obs_info(self):
+        """
+        Retrieves information on the Obs ID using the HEASARC TAP service.
+
+        Stores the information as a dictionary named 'obs_info'.
+
+        Also returns the dictionary.
+        """
+
+        tab = self.return_tap_table()
+
+        self.obs_info = {}
+
+        for col in tab.columns:
+            self.obs_info[col] = tab[0][col]
+
+        return self.obs_info
+
+    def return_tap_table(self):
+        """
+        Retrieves information on the Obs ID using the HEASARC TAP service.
+
+        Returns the data as an Astropy table.
+        """
+
+        query = """SELECT * FROM xmmmaster WHERE obsid='{0}'""".format(self.obsid)
+        tab = Heasarc.query_tap(query).to_table()
+
+        return tab
 
     def get_active_instruments(self):
         """
