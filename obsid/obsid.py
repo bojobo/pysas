@@ -1870,6 +1870,15 @@ class ObsID(FileMain):
             self.logger.info(f'{self.work_dir} does not exist. Creating it!')
             os.mkdir(self.work_dir)
 
+        verbosity     = kwargs.get('verbosity', None)
+        old_verbosity = None
+        if verbosity:
+            old_verbosity = os.environ.get('SAS_VERBOSITY')
+            if isinstance(verbosity, numbers.Number):
+                verbosity = f'{verbosity}'
+            self.logger.debug(f'Temporarily setting verbosity to {verbosity}')
+            os.environ['SAS_VERBOSITY'] = verbosity
+
         # Calibrate ODF data
         self.logger.debug('Call calibrate_odf')
         self.calibrate_odf(obs_dir        = self.obs_dir,
@@ -1920,6 +1929,10 @@ class ObsID(FileMain):
         #                        kwargs.get('omichain_args', []),
         #                        rerun   = rerun,
         #                        logFile = 'omichain.log')
+
+        if old_verbosity:
+            self.logger.debug(f'Resetting verbosity to {old_verbosity}')
+            os.environ['SAS_VERBOSITY'] = old_verbosity
         
         self.logger.debug('Exiting basic_setup')
         return
