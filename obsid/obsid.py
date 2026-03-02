@@ -116,6 +116,11 @@ class FileMain:
         - get_active_instruments: Searchs the *SUM.SAS or Obs summary
                         files for which instruments were active.
 
+        - write_bash_source_script: Writes a bash file that can be 
+                        sourced to set environment variables for 
+                        the Obs ID. SAS tasks can then be run from 
+                        using terminal.
+
     Private Methods:
 
         - _set_obsid: Initializes the obs_dir and sets environment 
@@ -1344,6 +1349,37 @@ class FileMain:
 
         return
     
+    def write_bash_source_script(self, filename='set_env_variables.sh'):
+        """
+        For diagnostic purposes. Will write a bash file that can be
+        sourced from the command line to set key environment variables 
+        for this data set.
+
+        SAS HAS TO BE INITIALIZED FROM THE COMMAND LINE FIRST.
+
+        The bash file will just set 'SAS_ODF' and 'SAS_CCF' for this 
+        Obs ID. All SAS tasks can then be run from the command line.
+
+        How to use:
+
+        In a terminal go to the Obs ID work directory and run: 
+            > source set_env_variables.sh
+        --or--
+            > . set_env_variables.sh
+        """
+
+        os.chdir(self.work_dir)
+
+        SAS_ODF = os.environ.get('SAS_ODF')
+        SAS_CCF = os.environ.get('SAS_CCF')
+
+        file_contents = [f'#!/bin/bash\n',
+                         f'export SAS_ODF={SAS_ODF}\n',
+                         f'export SAS_CCF={SAS_CCF}\n']
+
+        with open(filename, 'w') as file:
+            file.writelines(file_contents)
+
     def _reset_logger(self,
                        logbasename = None,
                        logfilename = None,
