@@ -934,8 +934,9 @@ class FileMain:
                  xlabel = kwargs.get('xlabel', 'RA'),
                  ylabel = kwargs.get('ylabel', 'Dec'),
                  title  = kwargs.get('title', f'{instrument} Image'),
-                 vmin = vmin,
-                 vmax = vmax,
+                 vmin   = vmin,
+                 vmax   = vmax,
+                 grid   = kwargs.get('grid', True),
                  save_file = kwargs.get('save_file', False),
                  out_fname = kwargs.get('out_fname', 'image.png'))
 
@@ -945,8 +946,9 @@ class FileMain:
                      xlabel = 'RA',
                      ylabel = 'Dec',
                      title  = None,
-                     vmin = 1.0,
-                     vmax = 10.0,
+                     vmin   = 1.0,
+                     vmax   = 10.0,
+                     grid   = True,
                      save_file = False,
                      out_fname = 'image.png'):
         """
@@ -979,8 +981,9 @@ class FileMain:
                  xlabel = xlabel,
                  ylabel = ylabel,
                  title  = title,
-                 vmin = vmin,
-                 vmax = vmax,
+                 vmin   = vmin,
+                 vmax   = vmax,
+                 grid   = grid,
                  save_file = save_file,
                  out_fname = out_fname)
 
