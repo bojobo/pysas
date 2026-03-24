@@ -30,6 +30,8 @@ obsid.py
 # Standard library imports
 import os, sys, shutil, glob, numbers, re, subprocess
 from pathlib import Path
+import requests
+from bs4 import BeautifulSoup
 
 # Third party imports
 from astropy.io import fits
@@ -2997,26 +2999,14 @@ class PPSFiles(FileMain):
         self.logger.debug(f'Changing into the pps_dir: {self.pps_dir}')
         os.chdir(self.pps_dir)
 
-        if not os.path.exists('index.html'):
-            cmd = f'wget -nH -e robots=off --cut-dirs=6 -np https://heasarc.gsfc.nasa.gov/FTP/xmm/data/rev0/{self.obsid}/PPS/'
-            self.logger.debug(f'Command: {cmd}')
-            result = subprocess.run(cmd, shell=True, capture_output=True)
-            if not os.path.exists(os.path.join(self.pps_dir,'index.html')):
-                self.logger.error('PPS index file not downloaded!')
-                self.logger.debug('Download failed. Exiting get_list_of_all_filenames.')
-                return
-
-        with open('index.html') as file:
-            lines = file.readlines()
-
-        os.remove('index.html')
+        reqs = requests.get(f'https://heasarc.gsfc.nasa.gov/FTP/xmm/data/rev0/{self.obsid}/PPS/')
+        soup = BeautifulSoup(reqs.text, 'html.parser')
 
         self.ALL_PPS_FILES = []
-
-        for line in lines:
-            match = re.findall(f'<a href="(P+{self.obsid}.*)">',line)
-            if len(match) == 1:
-                self.ALL_PPS_FILES.append(match[0])
+        for link in soup.find_all('a'):
+            file = link.get('href')
+            if file[0] == 'P':
+                self.ALL_PPS_FILES.append(file)
 
         self.logger.debug(f'Changing back to original dir: {cwd}')
         os.chdir(cwd)
