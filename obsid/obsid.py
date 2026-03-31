@@ -30,9 +30,12 @@ obsid.py
 # Standard library imports
 import os, sys, shutil, glob, numbers, re, subprocess
 from pathlib import Path
+import requests
+from bs4 import BeautifulSoup
 
 # Third party imports
 from astropy.io import fits
+from astroquery.heasarc import Heasarc
 
 # Local application imports
 from pysas import sas_cfg
@@ -114,6 +117,11 @@ class FileMain:
 
         - get_active_instruments: Searchs the *SUM.SAS or Obs summary
                         files for which instruments were active.
+
+        - write_bash_source_script: Writes a bash file that can be 
+                        sourced to set environment variables for 
+                        the Obs ID. SAS tasks can then be run from 
+                        using terminal.
 
     Private Methods:
 
@@ -928,8 +936,9 @@ class FileMain:
                  xlabel = kwargs.get('xlabel', 'RA'),
                  ylabel = kwargs.get('ylabel', 'Dec'),
                  title  = kwargs.get('title', f'{instrument} Image'),
-                 vmin = vmin,
-                 vmax = vmax,
+                 vmin   = vmin,
+                 vmax   = vmax,
+                 grid   = kwargs.get('grid', True),
                  save_file = kwargs.get('save_file', False),
                  out_fname = kwargs.get('out_fname', 'image.png'))
 
@@ -939,8 +948,9 @@ class FileMain:
                      xlabel = 'RA',
                      ylabel = 'Dec',
                      title  = None,
-                     vmin = 1.0,
-                     vmax = 10.0,
+                     vmin   = 1.0,
+                     vmax   = 10.0,
+                     grid   = True,
                      save_file = False,
                      out_fname = 'image.png'):
         """
@@ -973,8 +983,9 @@ class FileMain:
                  xlabel = xlabel,
                  ylabel = ylabel,
                  title  = title,
-                 vmin = vmin,
-                 vmax = vmax,
+                 vmin   = vmin,
+                 vmax   = vmax,
+                 grid   = grid,
                  save_file = save_file,
                  out_fname = out_fname)
 
@@ -1254,6 +1265,36 @@ class FileMain:
         self.find_event_list_files(print_output = self.output_to_terminal)
         self.find_rgs_spectra_files(print_output = self.output_to_terminal)
 
+    def get_obs_info(self):
+        """
+        Retrieves information on the Obs ID using the HEASARC TAP service.
+
+        Stores the information as a dictionary named 'obs_info'.
+
+        Also returns the dictionary.
+        """
+
+        tab = self.return_tap_table()
+
+        self.obs_info = {}
+
+        for col in tab.columns:
+            self.obs_info[col] = tab[0][col]
+
+        return self.obs_info
+
+    def return_tap_table(self):
+        """
+        Retrieves information on the Obs ID using the HEASARC TAP service.
+
+        Returns the data as an Astropy table.
+        """
+
+        query = """SELECT * FROM xmmmaster WHERE obsid='{0}'""".format(self.obsid)
+        tab = Heasarc.query_tap(query).to_table()
+
+        return tab
+
     def get_active_instruments(self):
         """
         Checks odf summary file for which instruments were active for that odf.
@@ -1313,6 +1354,37 @@ class FileMain:
 
         return
     
+    def write_bash_source_script(self, filename='set_env_variables.sh'):
+        """
+        For diagnostic purposes. Will write a bash file that can be
+        sourced from the command line to set key environment variables 
+        for this data set.
+
+        SAS HAS TO BE INITIALIZED FROM THE COMMAND LINE FIRST.
+
+        The bash file will just set 'SAS_ODF' and 'SAS_CCF' for this 
+        Obs ID. All SAS tasks can then be run from the command line.
+
+        How to use:
+
+        In a terminal go to the Obs ID work directory and run: 
+            > source set_env_variables.sh
+        --or--
+            > . set_env_variables.sh
+        """
+
+        os.chdir(self.work_dir)
+
+        SAS_ODF = os.environ.get('SAS_ODF')
+        SAS_CCF = os.environ.get('SAS_CCF')
+
+        file_contents = [f'#!/bin/bash\n',
+                         f'export SAS_ODF={SAS_ODF}\n',
+                         f'export SAS_CCF={SAS_CCF}\n']
+
+        with open(filename, 'w') as file:
+            file.writelines(file_contents)
+
     def _reset_logger(self,
                        logbasename = None,
                        logfilename = None,
@@ -1803,6 +1875,15 @@ class ObsID(FileMain):
             self.logger.info(f'{self.work_dir} does not exist. Creating it!')
             os.mkdir(self.work_dir)
 
+        verbosity     = kwargs.get('verbosity', None)
+        old_verbosity = None
+        if verbosity:
+            old_verbosity = os.environ.get('SAS_VERBOSITY')
+            if isinstance(verbosity, numbers.Number):
+                verbosity = f'{verbosity}'
+            self.logger.debug(f'Temporarily setting verbosity to {verbosity}')
+            os.environ['SAS_VERBOSITY'] = verbosity
+
         # Calibrate ODF data
         self.logger.debug('Call calibrate_odf')
         self.calibrate_odf(obs_dir        = self.obs_dir,
@@ -1853,6 +1934,10 @@ class ObsID(FileMain):
         #                        kwargs.get('omichain_args', []),
         #                        rerun   = rerun,
         #                        logFile = 'omichain.log')
+
+        if old_verbosity:
+            self.logger.debug(f'Resetting verbosity to {old_verbosity}')
+            os.environ['SAS_VERBOSITY'] = old_verbosity
         
         self.logger.debug('Exiting basic_setup')
         return
@@ -2914,26 +2999,14 @@ class PPSFiles(FileMain):
         self.logger.debug(f'Changing into the pps_dir: {self.pps_dir}')
         os.chdir(self.pps_dir)
 
-        if not os.path.exists('index.html'):
-            cmd = f'wget -nH -e robots=off --cut-dirs=6 -np https://heasarc.gsfc.nasa.gov/FTP/xmm/data/rev0/{self.obsid}/PPS/'
-            self.logger.debug(f'Command: {cmd}')
-            result = subprocess.run(cmd, shell=True, capture_output=True)
-            if not os.path.exists(os.path.join(self.pps_dir,'index.html')):
-                self.logger.error('PPS index file not downloaded!')
-                self.logger.debug('Download failed. Exiting get_list_of_all_filenames.')
-                return
-
-        with open('index.html') as file:
-            lines = file.readlines()
-
-        os.remove('index.html')
+        reqs = requests.get(f'https://heasarc.gsfc.nasa.gov/FTP/xmm/data/rev0/{self.obsid}/PPS/')
+        soup = BeautifulSoup(reqs.text, 'html.parser')
 
         self.ALL_PPS_FILES = []
-
-        for line in lines:
-            match = re.findall(f'<a href="(P+{self.obsid}.*)">',line)
-            if len(match) == 1:
-                self.ALL_PPS_FILES.append(match[0])
+        for link in soup.find_all('a'):
+            file = link.get('href')
+            if file[0] == 'P':
+                self.ALL_PPS_FILES.append(file)
 
         self.logger.debug(f'Changing back to original dir: {cwd}')
         os.chdir(cwd)

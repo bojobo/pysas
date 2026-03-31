@@ -105,6 +105,7 @@ def quick_image_plot(image_file,
                      title  = None,
                      vmin   = 1.0,
                      vmax   = 1e2,
+                     grid   = True,
                      save_file = False,
                      out_fname = 'image.png'):
     """
@@ -116,7 +117,10 @@ def quick_image_plot(image_file,
     ax = plt.subplot(projection=wcs)
     plt.imshow(hdu.data, origin='lower', norm='log', vmin=vmin, vmax=vmax)
     ax.set_facecolor("black")
-    plt.grid(color='blue', ls='solid')
+    if grid:
+        plt.grid(color='blue', ls='solid')
+    else:
+        ax.grid(False)
     if not xlabel is None:
         plt.xlabel(xlabel)
     if not ylabel is None:

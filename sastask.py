@@ -286,38 +286,48 @@ class MyTask:
         self.argsdic.pop('options',None)
 
         # 1st check: Whether or not parameters in inargs are defined in the parameter file
+        self.logger.debug('1st parameter check: Check if parameters are valid.')
         for p in self.argsdic.keys():
             if p.strip() not in self.allparams.keys():
-                raise Exception(f'Parameter {p} is not defined in the parameter file')
+                self.logger.error(f"Parameter '{p}' is not defined in the parameter file.")
+                raise Exception(f"Parameter '{p}' is not recognized!")
 
-        # 2nd check: Whether we have mandatory parameters and subparameters
-        for k, v in self.rev_mandpar_dict.items():
-            if k.strip() in v and k.strip() not in self.argsdic.keys():
-                raise Exception(f'Missing, at least, mandatory parameter {k}')
-            if k not in v:
-                for p in self.argsdic.keys():
-                    if p in v:
-                        implicit = 'yes'
-                        for c in v:
-                            if c not in self.argsdic.keys():
-                                implicit = 'no'
-                                raise Exception(f'Besides {p}, mandatory subparameter {c} must also be present')
-                        if implicit == 'yes':
-                            defval = self.allparams[k]['default']
-                            if self.allparams[k]['type'] == 'string':
-                                self.rev_mandpar_string_dict[k].remove(defval)
-                                alt = self.rev_mandpar_string_dict[k].pop()
-                            elif self.allparams[k]['type'] == 'bool' and defval == 'no':
-                                alt = 'yes'
-                            elif self.allparams[k]['type'] == 'bool' and defval == 'yes':
-                                alt = 'no'
-                            newinarg = k + '=' + alt
-                            self.argsdic[k] = alt
-                            if k in self.argsdic.keys():
-                                self.logger.warning(f'No need to include {k}. Assumed {newinarg}')
-                            break
-                    elif p in v and k not in self.argsdic.keys():
-                        raise Exception(f'Mandatory sub-parameter {p} requires {k} be present')
+        # 2nd check: Whether we have any missing mandatory **main** parameters
+        self.logger.debug('2nd parameter check: Check if missing any mandatory main parameters.')
+        for p in self.mainparams:
+            if p in self.mandparams and p not in self.argsdic.keys():
+                self.logger.error('Missing a mandatory main parameter.')
+                raise Exception(f'Missing, at least, mandatory parameter "{p}".')
+
+        # 3rd check: Check if any subparameters passed in have parents with a required value ("conditionally mandatory")
+        # Check that parent value passed in matches required value
+        # If parent not passed in then implicitly set the "default" parent value
+        self.logger.debug('3rd parameter check: Check if any subparameters passed in have parents with a required value.')
+        for p in self.argsdic.keys(): # Loop over all parameters passed in
+            if self.allparams[p]['cond_mand']: # If the parameter is conditionally mandatory
+                parent = self.allparams[p]['parent']
+                cond_par_val = self.allparams[p]['cond_par_val'] # Required parent value
+                if parent in self.argsdic.keys(): # If parent was passed in
+                    parent_value = self.argsdic[parent].strip()
+                    if parent_value != cond_par_val: # Check if passed in parent value matches required value
+                        raise Exception(f'If subparameter {p} is used then {parent} must be set to "{cond_par_val}"!')
+                else: # Parent not passed in
+                    self.logger.info(f'Parameter {parent} implied by {p}.')
+                    self.logger.info(f'Setting {parent} default to "{cond_par_val}".')
+                    self.allparams[parent]['default'] = cond_par_val
+
+        # 4th check: Whether we are missing any conditionally mandatory **sub**parameters
+        # Mandatory subparameters are dependant on the value of their parent parameter.
+        self.logger.debug('4th parameter check: Check if any conditionally mandatory subparameters are missing.')
+        for parent, children in self.rev_mandpar_dict.items(): # Loop over dictionary containing mandatory subparameters
+            if parent in self.argsdic.keys(): # If parent was passed in
+                for child in children:
+                    cond_par_val = self.allparams[child]['cond_par_val']
+                    parent_value = self.argsdic[parent].strip()
+                    if parent_value == cond_par_val and child not in self.argsdic.keys():
+                        # If parent value matches necessary condition and mandatory child not passed in
+                        self.logger.error(f'When {parent} has value "{parent_value}", {child} is a mandatory subparameter.')
+                        raise Exception(f'Missing mandatory subparameter {child}.')
 
         # If any subparameters of a parent parameter are set in the command
 	    # line or the arguments list, the parent can not keep its default
@@ -345,8 +355,7 @@ class MyTask:
                         if sp not in self.mandparams:
                             implicitparams[k] = v
 
-        # At this point in inargs there should be only optional modifiers
-        # and true task parameters
+        # At this point in inargs there should be only true task parameters
 
         # Given that we know all parameters for the task (self.allparams) with
         # their default values, and the parameters and their values entered 
@@ -362,18 +371,18 @@ class MyTask:
         for a in self.allparams.values():
             defaults[a['id']] = a.setdefault('default', '')
 
-        # 3rd Check: Whether any subparameter is set in self.argsdic or not.
+        # 5th Check: Whether any non-mandatory subparameter is set in self.argsdic or not.
         # We assume the parent is boolean ('yes'/'no').
-
+        self.logger.debug('5th parameter check: Check if any non-mandatory subparameter is set in self.argsdic or not.')
         for a in self.argsdic.keys():
             for k, v in implicitparams.items():
                 if a in v:
-                    #print(f'parent = {k}')
+                    # print(f'parent = {k}')
                     if self.allparams[k]['default'] == 'no':
                         defaults[k] = 'yes'
                     elif self.allparams[k]['default']  == 'yes':
                         defaults[k] = 'no'
-                    #print(k, a,  defaults[k])
+                    # print(k, a,  defaults[k])
                     break
 
         # Return options that modify the environment to argdic
