@@ -168,11 +168,30 @@ class paramXmlInfoReader:
         self.params = doc.getElementsByTagName('PARAM')
 
         # Dictionary allparams
+        # A dictionary where each key is the name of a parameter.
+        # Each item in the dictionary is a dictionary with the 
+        # following items:
+        #     - id (string)
+        #     - type (string)
+        #     - default (string)
+        #     - mandatory (string)
+        #     - description (string)
+        # The following items are added later:
+        #     - parent (string/None)
+        #     - children (list)
+        #     - cond_mand (boolean) "conditionally mandatory"
+        #     - cond_par_val (string/None) "conditional parent value"
+
         self.allparams = {}
         for p in self.params:
             attrib = self.att(p)
             pname = attrib['id']
             self.allparams[pname] = attrib
+            # Will be set later
+            self.allparams[pname]['parent'] = None
+            self.allparams[pname]['children'] = []
+            self.allparams[pname]['cond_mand'] = False
+            self.allparams[pname]['cond_par_val'] = None
 
         # pels dictionary
 
@@ -201,13 +220,15 @@ class paramXmlInfoReader:
                 self.parmap.append(pardict)
 
         # mandpar
+        # List of mandatory parameters
 
         self.mandpar = []
-        for p in self.params:
-            if self.att(p)['mandatory'] == 'yes':
-                self.mandpar.append(self.att(p)['id'])
+        for pname,paramdict in self.allparams.items():
+            if paramdict['mandatory']:
+                self.mandpar.append(paramdict['id'])
 
         # mainparams
+        # List of main parameters
 
         self.mainparams = []
         for e in self.parmap:
@@ -225,7 +246,7 @@ class paramXmlInfoReader:
             for d in self.parmap:
                 for k, v in d.items():
                     if m == k and m in self.mainparams:
-                        self.mandpar_dict[m] = m
+                        # self.mandpar_dict[m] = m
                         continue
                     elif m in v:
                         self.mandpar_dict[m] = k
@@ -253,6 +274,12 @@ class paramXmlInfoReader:
                     alternatives.append(a)
             self.rev_mandpar_string_dict[pname] = alternatives
 
+        # Adding more information to the allparams dictionary
+        #     - parent (string/None)
+        #     - children (list)
+        #     - cond_mand (boolean) "conditionally mandatory"
+        #     - cond_par_val (string) "conditional parent value"
+        #     - constraints (string)
 
         # Adding the constraints attribute to the parameters attributes in parmap
         for p in self.params:
@@ -263,6 +290,23 @@ class paramXmlInfoReader:
                     constraints = constraints.strip('\n')
                     constraints = constraints.strip()
                     self.allparams[pname]['constraints'] = constraints
+        
+        # Adding list of children and parent value
+        for d in self.parmap:
+            for parent, child_list in d.items():
+                self.allparams[parent]['children'] = child_list
+                for child in child_list:
+                    self.allparams[child]['parent'] = parent
+                    p = self.rev_pels[child]
+                    if p.parentNode.hasAttribute('value'):
+                        self.allparams[child]['cond_par_val'] = p.parentNode.getAttribute('value')
+
+        # Adding whether the parameter is "conditionally mandatory", and
+        # the parent value needed if "conditionally mandatory".
+        for parent,child_list in self.rev_mandpar_dict.items():
+            for child in child_list:
+                if child in self.mandpar:
+                    self.allparams[child]['cond_mand'] = True                
 
         # Clean up and close file
         doc.unlink()
@@ -305,7 +349,9 @@ class paramXmlInfoReader:
         for k, v in p.attributes.items():
             attrib[k] = v
         if 'mandatory' not in attrib.keys():
-            attrib['mandatory'] = 'no'
+            attrib['mandatory'] = False
+        else:
+            attrib['mandatory'] = True
         if 'list' not in attrib.keys():
             attrib['list'] = 'no'
         # All parameters have a DESCRIPTION node after them

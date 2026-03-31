@@ -72,7 +72,6 @@ def get_logger(taskname: str,
     # This cleans up any loguru loggers that
     # might be hanging around.
     logger.remove()
-
     
     # SAS_TASKLOGDIR allows to set the directory for the logging file
     # Priority of defaults for task_logdir
