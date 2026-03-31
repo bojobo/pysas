@@ -162,8 +162,7 @@ class paramXmlInfoReader:
         try:
             doc = md.parse(self.xmlFile)
         except:
-            self.logger.error(f'ERROR opening par file {self.taskname}.par: {self.xmlFile}')
-            sys.exit(1)
+            raise Exception(f'ERROR opening par file {self.taskname}.par: {self.xmlFile}')
 
         # self.params
         self.params = doc.getElementsByTagName('PARAM')
@@ -264,6 +263,9 @@ class paramXmlInfoReader:
                     constraints = constraints.strip('\n')
                     constraints = constraints.strip()
                     self.allparams[pname]['constraints'] = constraints
+
+        # Clean up and close file
+        doc.unlink()
 
     # Print table of all parameters
     def printHelp(self):

@@ -288,7 +288,8 @@ class MyTask:
         # 1st check: Whether or not parameters in inargs are defined in the parameter file
         for p in self.argsdic.keys():
             if p.strip() not in self.allparams.keys():
-                raise Exception(f'Parameter {p} is not defined in the parameter file')
+                self.logger.error(f"Parameter '{p}' is not defined in the parameter file.")
+                raise Exception(f"Parameter '{p}' is not recognized!")
 
         # 2nd check: Whether we have mandatory parameters and subparameters
         for k, v in self.rev_mandpar_dict.items():

@@ -68,7 +68,11 @@ def get_logger(taskname: str,
                        when running a non Python SAS task using 
                        subprocess.
     """
-    task_logger = copy.deepcopy(logger)
+    
+    # This cleans up any loguru loggers that
+    # might be hanging around.
+    logger.remove()
+
     
     # SAS_TASKLOGDIR allows to set the directory for the logging file
     # Priority of defaults for task_logdir
@@ -131,7 +135,7 @@ def get_logger(taskname: str,
         
         # Add file sink
         if tofile:
-            task_logger.add(
+            logger.add(
                 sink=task_logfile,
                 level=level,
                 mode=sastasklogfmode,
@@ -141,7 +145,7 @@ def get_logger(taskname: str,
 
         # Add console sink
         if toterminal:
-            task_logger.add(
+            logger.add(
                 sink=sys.stdout,
                 level=level,
                 enqueue=True,
@@ -155,7 +159,7 @@ def get_logger(taskname: str,
         
         # Add file sink
         if tofile:
-            task_logger.add(
+            logger.add(
                 sink=task_logfile,
                 level=level,
                 mode=sastasklogfmode,
@@ -165,14 +169,14 @@ def get_logger(taskname: str,
 
         # Add console sink
         if toterminal:
-            task_logger.add(
+            logger.add(
                 sink=sys.stdout,
                 level=level,
                 enqueue=True,
                 format="{message}",
             )
 
-    return task_logger
+    return logger
 
 class TaskLogger:
     """
