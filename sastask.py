@@ -312,9 +312,10 @@ class MyTask:
                     if parent_value != cond_par_val: # Check if passed in parent value matches required value
                         raise Exception(f'If subparameter {p} is used then {parent} must be set to "{cond_par_val}"!')
                 else: # Parent not passed in
-                    self.logger.info(f'Parameter {parent} implied by {p}.')
-                    self.logger.info(f'Setting {parent} default to "{cond_par_val}".')
-                    self.allparams[parent]['default'] = cond_par_val
+                    if self.allparams[parent]['default'] != cond_par_val:
+                        self.logger.info(f'Parameter {parent} implied by {p}.')
+                        self.logger.info(f'Setting {parent} default to "{cond_par_val}".')
+                        self.allparams[parent]['default'] = cond_par_val
 
         # 4th check: Whether we are missing any conditionally mandatory **sub**parameters
         # Mandatory subparameters are dependant on the value of their parent parameter.
