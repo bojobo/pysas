@@ -230,6 +230,9 @@ class MyTask:
                     options.append(a)
             argsdic['options'] = " ".join(options)
             self.inargs = argsdic
+        
+        self.logger.debug(f'Reading parameter file.')
+        self.readparfile()
 
     def __repr__(self):
         return f'{self.__class__.__name__}({self.taskname}, {self.inargs})'
@@ -417,8 +420,6 @@ class MyTask:
         a run function, so we will invoke subprocess
         """
         self.logger.debug(f'Running {self.taskname}')
-        self.logger.debug(f'Reading parameter file.')
-        self.readparfile()
         self.logger.debug(f'Processing input arguments')
         self.processargs()
         if self.Exit:
