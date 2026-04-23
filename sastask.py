@@ -230,6 +230,9 @@ class MyTask:
                     options.append(a)
             argsdic['options'] = " ".join(options)
             self.inargs = argsdic
+        
+        self.logger.debug(f'Reading parameter file.')
+        self.readparfile()
 
     def __repr__(self):
         return f'{self.__class__.__name__}({self.taskname}, {self.inargs})'
@@ -312,9 +315,10 @@ class MyTask:
                     if parent_value != cond_par_val: # Check if passed in parent value matches required value
                         raise Exception(f'If subparameter {p} is used then {parent} must be set to "{cond_par_val}"!')
                 else: # Parent not passed in
-                    self.logger.info(f'Parameter {parent} implied by {p}.')
-                    self.logger.info(f'Setting {parent} default to "{cond_par_val}".')
-                    self.allparams[parent]['default'] = cond_par_val
+                    if self.allparams[parent]['default'] != cond_par_val:
+                        self.logger.info(f'Parameter {parent} implied by {p}.')
+                        self.logger.info(f'Setting {parent} default to "{cond_par_val}".')
+                        self.allparams[parent]['default'] = cond_par_val
 
         # 4th check: Whether we are missing any conditionally mandatory **sub**parameters
         # Mandatory subparameters are dependant on the value of their parent parameter.
@@ -416,8 +420,6 @@ class MyTask:
         a run function, so we will invoke subprocess
         """
         self.logger.debug(f'Running {self.taskname}')
-        self.logger.debug(f'Reading parameter file.')
-        self.readparfile()
         self.logger.debug(f'Processing input arguments')
         self.processargs()
         if self.Exit:

@@ -1,7 +1,19 @@
 ChangeLog for pysas
 =================
 
-Version 2.3.0 - 2026-??-?? (RT)
+Version 2.4.0 - 2026-03-31 (RT)
+
++ param    : Change the logic for parameter parsing. Check if subparameters are
+             mandatory based on value of parent parameter.
+
++ sastask  : Change the logic for parameter parsing. Check if subparameters are
+             mandatory based on value of parent parameter.
+
++ logger   : Change how logger is created. Prevents excessive thread creation.
+
++ obsid    : Changes to how ObsID seeks for information on the Obs ID.
+
+Version 2.3.0 - 2026-02-02 (RT)
 ---------------
 
 + FileMain : Added superclass for file handling. Subclasses are: ObsID and PPSFiles
