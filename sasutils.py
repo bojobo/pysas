@@ -222,51 +222,59 @@ def download_data(obsid,
                 else:
                     level = [level]
                 for levl in level:
+                    os.chdir(obs_dir)
+                    logger.debug(f'Changed directory to {obs_dir}')
                     # Download the obsid from ESA, using astroquery
                     logger.info(f'Downloading {obsid}, level {levl} into {obs_dir}')
                     if proprietary: logger.debug('Requesting proprietary data.')
-                    XMMNewton.download_data(obsid, level=levl,
-                                            prop=proprietary,
-                                            credentials_file=credentials_file,
+                    XMMNewton.download_data(obsid,
+                                            level = levl,
+                                            prop  = proprietary,
+                                            credentials_file = credentials_file,
                                             **kwargs)
                     if levl == 'ODF':    
                         os.mkdir(odf_dir)
-                # Check that the tar.gz file has been downloaded
-                odftar = glob.glob(obs_dir+f'/{obsid}'+'*')[0]
-                try:
-                    os.path.exists(odftar)
-                    logger.info(f'{odftar} found.') 
-                except FileExistsError:
-                    logger.error(f'File {odftar} is not present. Not downloaded?')
-                    sys.exit(1)
+                    # Check that the tar.gz file has been downloaded
+                    odftar = glob.glob(obs_dir+f'/{obsid}'+'*')[0]
+                    try:
+                        os.path.exists(odftar)
+                        logger.info(f'{odftar} found.') 
+                    except FileExistsError:
+                        logger.error(f'File {odftar} is not present. Not downloaded?')
+                        sys.exit(1)
 
-                tarextension = os.path.splitext(odftar)[1]
-                if tarextension == '.gz': tar_mode = 'r:gz'
-                elif tarextension == '.tar': tar_mode = 'r'
-                else:
-                    logger.error(f'File {odftar} extension not recognized.')
-                    raise Exception(f'File {odftar} extension not recognized.')
+                    tarextension = os.path.splitext(odftar)[1]
+                    if tarextension == '.gz': tar_mode = 'r:gz'
+                    elif tarextension == '.tar': tar_mode = 'r'
+                    else:
+                        logger.error(f'File {odftar} extension not recognized.')
+                        raise Exception(f'File {odftar} extension not recognized.')
 
-                # Untars the obsid.tar.gz file
-                logger.info(f'Unpacking {odftar} ...')
+                    # Untars the obsid.tar.gz file
+                    logger.info(f'Unpacking {odftar} ...')
 
-                try:
-                    with tarfile.open(odftar,tar_mode) as tar:
-                        if levl == 'ODF':
-                            tar.extractall(path=odf_dir)
-                        elif levl == 'PPS':
-                            tar.extractall(path=data_dir)
-                            if os.path.exists(pps_dir):
-                                copytree('pps','PPS')
-                                shutil.rmtree('pps')
-                            else:
-                                os.rename('pps','PPS')
-                    os.remove(odftar)
-                    logger.info(f'{odftar} extracted successfully!')
-                    logger.info(f'{odftar} removed')
-                except tarfile.ExtractError:
-                    logger.error('tar file extraction failed')
-                    raise Exception('tar file extraction failed')
+                    try:
+                        with tarfile.open(odftar,tar_mode) as tar:
+                            if levl == 'ODF':
+                                os.chdir(odf_dir)
+                                logger.debug(f'Changed directory to {odf_dir}')
+                                tar.extractall(path=odf_dir)
+                            elif levl == 'PPS':
+                                tar.extractall(path=data_dir)
+                                if os.path.exists(pps_dir):
+                                    copytree('pps','PPS', dirs_exist_ok=True)
+                                    shutil.rmtree('pps')
+                                else:
+                                    os.chdir(obs_dir)
+                                    logger.debug(f'Changed directory to {obs_dir}')
+                                    if os.path.exists('pps'):
+                                        os.rename('pps','PPS')
+                        os.remove(odftar)
+                        logger.info(f'{odftar} extracted successfully!')
+                        logger.info(f'{odftar} removed')
+                    except tarfile.ExtractError:
+                        logger.error('tar file extraction failed')
+                        raise Exception('tar file extraction failed')
         case 'heasarc' | 'nasa' | 'sciserver' | 'fornax' | 'aws':
             download_location = obs_dir
             on_host = '...'
