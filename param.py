@@ -351,7 +351,10 @@ class paramXmlInfoReader:
         if 'mandatory' not in attrib.keys():
             attrib['mandatory'] = False
         else:
-            attrib['mandatory'] = True
+            if attrib['mandatory'] == 'yes':
+                attrib['mandatory'] = True
+            else:
+                attrib['mandatory'] = False
         if 'list' not in attrib.keys():
             attrib['list'] = 'no'
         # All parameters have a DESCRIPTION node after them

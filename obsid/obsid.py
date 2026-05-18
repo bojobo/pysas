@@ -590,7 +590,7 @@ class FileMain:
             self.obs_dir = os.path.join(self.data_dir,self.obsid)
             self.logger.debug(f'Setting obs_dir: {self.obs_dir}')
 
-        # Set odf_dir
+        # Set pps_dir
         if not hasattr(self, 'pps_dir'):
             self.pps_dir = os.path.join(self.obs_dir,'PPS')
             self.logger.debug(f'Setting pps_dir: {self.pps_dir}')
@@ -786,6 +786,16 @@ class FileMain:
         if not hasattr(self, 'obs_dir'):
             self.obs_dir = os.path.join(self.data_dir,self.obsid)
             self.logger.debug(f'Setting obs_dir: {self.obs_dir}')
+
+        # Set odf_dir
+        if not hasattr(self, 'odf_dir'):
+            self.odf_dir = os.path.join(self.obs_dir,'ODF')
+            self.logger.debug(f'Setting odf_dir: {self.odf_dir}')
+
+        # Set pps_dir
+        if not hasattr(self, 'pps_dir'):
+            self.pps_dir = os.path.join(self.obs_dir,'PPS')
+            self.logger.debug(f'Setting pps_dir: {self.pps_dir}')
 
         # Set repo from config file (default 'esa')
         self.logger.debug(f'Checking repo: {repo}')
