@@ -2469,10 +2469,9 @@ class ObsID(FileMain):
         
         # Check whether ccf.cif is produced or not
         ccfcif = glob.glob('ccf.cif')
-        try:
-            os.path.exists(ccfcif[0])
+        if ccfcif and os.path.exists(ccfcif[0]):
             self.logger.info('CIF file {0} created'.format(ccfcif[0]))
-        except FileExistsError:
+        else:
             self.logger.error('The ccf.cif was not produced')
             print('ccf.cif file is not produced')
             sys.exit(1)
