@@ -2472,9 +2472,8 @@ class ObsID(FileMain):
         if ccfcif and os.path.exists(ccfcif[0]):
             self.logger.info('CIF file {0} created'.format(ccfcif[0]))
         else:
-            self.logger.error('The ccf.cif was not produced')
-            print('ccf.cif file is not produced')
-            sys.exit(1)
+            self.logger.critical('The ccf.cif was not created')
+            raise Exception('ccf.cif file not created')
         
         # Sets SAS_CCF variable
         fullccfcif = os.path.join(self.work_dir, 'ccf.cif')
@@ -2496,13 +2495,11 @@ class ObsID(FileMain):
 
         # Check whether the SUM.SAS has been produced or not
         sumsas = glob.glob('*SUM.SAS')
-        try:
-            os.path.exists(sumsas[0])
+        if sumsas and os.path.exists(sumsas[0]):
             self.logger.info('SAS summary file {0} created'.format(sumsas[0]))
-        except FileExistsError:
-            self.logger.error('SUM.SAS file was not produced') 
-            print('SUM.SAS file was not produced')
-            sys.exit(1)
+        else:
+            self.logger.critical('The SUM.SAS was not created')
+            raise Exception('SUM.SAS file not created')
         
         # Set the SAS_ODF to the SUM.SAS file
         fullsumsas = os.path.join(self.work_dir, sumsas[0])
