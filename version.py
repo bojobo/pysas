@@ -19,7 +19,7 @@
 #
 
 # pySAS version
-VERSION = '2.4.3'
+VERSION = '2.4.4'
 
 import subprocess, os, sys
 
