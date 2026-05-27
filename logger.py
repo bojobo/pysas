@@ -36,38 +36,44 @@ from pysas import sas_cfg
 # Functions
 
 def get_logger(taskname: str, 
-               toterminal  = True, 
-               tofile      = False, 
-               logfilename = None, 
-               tasklogdir  = None,
-               pylogger    = True):
+               toterminal: bool = True, 
+               tofile: bool     = False, 
+               logfilename: str = None, 
+               tasklogdir: str  = None,
+               pylogger: bool   = True):
     """
     Function to get a loguru logger object.
 
-    Inputs:
-    (required)
-        - taskname   : Name of the task to be run. By default will
-                       name log file "{taskname}.log"
-    (optional)
-        - toterminal : (default: True) Output will be written to 
-                        the terminal.
-        - tofile     : (default: False) Output will be written to 
-                        a log file.
-        - logfilename: Designated log file name. Will be used instead
-                       of "{taskname}.log". Useful for putting all 
-                       output from multiple tasks into the same file.
-        - tasklogdir : (default: cwd) Directory where to write the log 
-                       file.
-                       Priority of defaults for task_logdir
-                         1. tasklogdir (passed in to function)
-                         2. SAS_TASKLOGDIR (envirnment variable)
-                         3. cwd (final default)
-        - pylogger   : True: Use logger settings for Python logging
-                       False: Use logger settings for subprocess logging
-                       Only set to 'False' in sastask.py -> MyTask.run()
-                       when running a non Python SAS task using 
-                       subprocess.
-    """
+    Parameters
+    ----------
+    taskname : str
+        Name of the task to be run. By default will name log file 
+        "{taskname}.log".
+    toterminal : bool, optional
+        Output will be written to the terminal, by default True.
+    tofile : bool, optional
+        Output will be written to a log file, by default False.
+    logfilename : str, optional
+        Designated log file name. Will be used instead of "{taskname}.log". 
+        Useful for putting all output from multiple tasks into the same file, 
+        by default "{taskname}.log".
+    tasklogdir : str, optional
+        Directory where to write the log file. Priority of defaults for 
+        task_logdir
+            1. tasklogdir (passed in to function)
+            2. SAS_TASKLOGDIR (envirnment variable)
+            3. cwd (final default)
+    pylogger : bool, optional
+        True: Use logger settings for Python logging 
+        False: Use logger settings for subprocess logging Only set to 'False' 
+        in sastask.py -> MyTask.run() when running a non Python SAS task using 
+        subprocess, by default True.
+
+    Returns
+    -------
+    logger
+        Logger instance.
+    """    
     
     # This cleans up any loguru loggers that
     # might be hanging around.
