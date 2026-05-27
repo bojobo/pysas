@@ -401,6 +401,11 @@ class FileMain:
             -OR- path to file containing ONLY the encryption key. Note: ONLY 
             used for data from the HEASARC. 
             Defaults to None.
+
+        Raises
+        ------
+        ValueError
+            Download repository not recognized.
         """
         
         # Set data_dir
@@ -423,9 +428,9 @@ class FileMain:
             self.logger.debug(f'repo from config: {self.repo}')
         else:
             if repo.lower() not in repo_opts:
-                self.logger.error('Download repository not found!')
-                print(f'Options for repo are {repo_opts}.')
-                raise Exception('Download repository not found!')
+                self.logger.error('Download repository not recognized!')
+                raise ValueError(f'Download repository {repo} not recognized. '\
+                                 f'Allowed Options for repo are {repo_opts}.')
             else:
                 self.logger.info(f'Will download data from {repo}.')
             self.repo = repo
@@ -587,6 +592,11 @@ class FileMain:
         **kwargs
             Additional keyword arguments passed through to underlying download 
             handler (Astroquery).
+        
+        Raises
+        ------
+        ValueError
+            Download repository not recognized.
         """
         
         # Set data_dir
@@ -609,9 +619,9 @@ class FileMain:
             self.logger.debug(f'repo from config: {self.repo}')
         else:
             if repo.lower() not in repo_opts:
-                self.logger.error('Download repository not found!')
-                print(f'Options for repo are {repo_opts}.')
-                raise Exception('Download repository not found!')
+                self.logger.error('Download repository not recognized!')
+                raise ValueError(f'Download repository {repo} not recognized. '\
+                                 f'Allowed Options for repo are {repo_opts}.')
             else:
                 self.logger.info(f'Will download data from {repo}.')
             self.repo = repo
@@ -778,6 +788,11 @@ class FileMain:
             -OR- path to file containing ONLY the encryption key. Note: ONLY 
             used for data from the HEASARC. 
             Defaults to None.
+        
+        Raises
+        ------
+        ValueError
+            Download repository not recognized.
         """
         
         # Set data_dir
@@ -805,9 +820,9 @@ class FileMain:
             self.logger.debug(f'repo from config: {self.repo}')
         else:
             if repo.lower() not in repo_opts:
-                self.logger.error('Download repository not found!')
-                print(f'Options for repo are {repo_opts}.')
-                raise Exception('Download repository not found!')
+                self.logger.error('Download repository not recognized!')
+                raise ValueError(f'Download repository {repo} not recognized. '\
+                                 f'Allowed Options for repo are {repo_opts}.')
             else:
                 self.logger.info(f'Will download data from {repo}.')
             self.repo = repo
@@ -2034,6 +2049,17 @@ class ObsID(FileMain):
         **kwargs
             Additional keyword arguments passed to 'download_ODF_data' and 
             'calibrate_odf'.
+
+        Raises
+        ------
+        ValueError
+            Download repository not recognized.
+        EnvironmentError
+            LHEASOFT is not set. Please initialise HEASOFT.
+        EnvironmentError
+            SAS_DIR is not defined. Please initialise SAS.
+        EnvironmentError
+            SAS_CCFPATH not set. Please define it.
         """
 
         self.logger.debug('Starting basic_setup')
@@ -2062,9 +2088,9 @@ class ObsID(FileMain):
             self.logger.debug(f'repo from config: {self.repo}')
         else:
             if repo.lower() not in repo_opts:
-                self.logger.error('Download repository not found!')
-                print(f'Options for repo are {repo_opts}.')
-                raise Exception('Download repository not found!')
+                self.logger.error('Download repository not recognized!')
+                raise ValueError(f'Download repository {repo} not recognized. '\
+                                 f'Allowed Options for repo are {repo_opts}.')
             else:
                 self.logger.info(f'Will download data from {repo}.')
             self.repo = repo
@@ -2073,22 +2099,22 @@ class ObsID(FileMain):
         # Checking LHEASOFT, SAS_DIR and SAS_CCFPATH
         lheasoft = os.environ.get('LHEASOFT')
         if not lheasoft:
-            self.logger.error('LHEASOFT is not set. Please initialise HEASOFT')
-            raise Exception('LHEASOFT is not set. Please initialise HEASOFT')
+            self.logger.error('LHEASOFT is not set. Please initialise HEASOFT.')
+            raise EnvironmentError('LHEASOFT is not set. Please initialise HEASOFT.')
         else:
             self.logger.info(f'LHEASOFT = {lheasoft}')
 
         sasdir = os.environ.get('SAS_DIR')
         if not sasdir:
             self.logger.error('SAS_DIR is not defined. Please initialise SAS.')
-            raise Exception('SAS_DIR is not defined. Please initialise SAS.')
+            raise EnvironmentError('SAS_DIR is not defined. Please initialise SAS.')
         else:
             self.logger.info(f'SAS_DIR = {sasdir}') 
 
         sas_ccfpath = os.environ.get('SAS_CCFPATH')
         if not sas_ccfpath:
             self.logger.error('SAS_CCFPATH not set. Please define it.')
-            raise Exception('SAS_CCFPATH not set. Please define it.')
+            raise EnvironmentError('SAS_CCFPATH not set. Please define it.')
         else:
             self.logger.info(f'SAS_CCFPATH = {sas_ccfpath}')
         
@@ -2237,6 +2263,13 @@ class ObsID(FileMain):
             Whether to force recalibration even if calibration products already 
             exist.
             Defaults to False.
+
+        Raises
+        ------
+        IsADirectoryError
+            Observation directory: {self.obs_dir} does not exist!
+        FileNotFoundError
+            ODF directory and files not found!
         """
 
         # If user passes in obs_dir
@@ -2249,18 +2282,22 @@ class ObsID(FileMain):
             if not hasattr(self, 'data_dir'):
                 # If the user has gotten this far without setting data_dir,
                 # they are probably doing something very wrong.
-                self.logger.debug(f'If you are seeing this, then you are probably doing something wrong.')
+                self.logger.debug(f'If you are seeing this, then you are '\
+                                  f'probably doing something wrong.')
                 self._set_data_dir(None)
             self.obs_dir = os.path.join(self.data_dir, self.obsid)
             self.logger.info(f'Setting obs_dir to: {self.obs_dir}')
 
         # Check if obs_dir exists. If not then raise an Exception.
         if not os.path.isdir(self.obs_dir):
-            self.logger.error(f'Observation directory: {self.obs_dir} does not exist!')
-            print(f'Error! Observation directory: {self.obs_dir} does not exist!')
-            print(f'Please provide the path to the observation directory \n \
-                    using the input obs_dir=path/to/obs/dir/.')
-            raise Exception(f'Error! Observation directory: {self.obs_dir} does not exist!')
+            self.logger.error(f'Observation directory: {self.obs_dir} does '\
+                               'not exist!')
+            print(f'Error! Observation directory: {self.obs_dir} does not '\
+                   'exist!')
+            print('Please provide the path to the observation directory \n '\
+                  'using the input obs_dir=path/to/obs/dir/.')
+            raise IsADirectoryError(f'Observation directory: {self.obs_dir} '\
+                                     'does not exist!')
 
         self.logger.info(f'Observation directory = {self.obs_dir}')
 
@@ -2300,31 +2337,41 @@ class ObsID(FileMain):
                     self._run_calibration(cifbuild_opts,odfingest_opts)
                 else:
                     self.logger.error('ODF directory and files not found!')
-                    print('ODF directory and files not found! Try downloading data again.')
-                    raise Exception('ODF directory and files not found!')
-            # No need for further checks recalibration run. Return control to calling function.
+                    print('ODF directory and files not found! Try downloading '\
+                          'data again.')
+                    raise FileNotFoundError('ODF directory and files not '\
+                                            'found!')
+            # No need for further checks recalibration run. Return control to 
+            # calling function.
             return
         else:
             ccf_exists = False
             SUM_exists = False
-            self.logger.info(f'Searching {self.obs_dir} for ccf.cif and *SUM.SAS files ...')
+            self.logger.info(f'Searching {self.obs_dir} for ccf.cif and '\
+                              '*SUM.SAS files ...')
 
             # Looking for ccf.cif file.
             if self.files['sas_ccf'] is None:
                 # get_cal_ind should set self.files['sas_ccf'] if file is found.
                 _ = self.get_cal_ind()
-                # Will only accept locally generated calibration files. No PPS CALIND file accepted.
-                if self.files['sas_ccf'] is not None and 'ccf.cif' in self.files['sas_ccf']: ccf_exists = True
+                # Will only accept locally generated calibration files. 
+                # No PPS CALIND file accepted.
+                if (self.files['sas_ccf'] is not None and 
+                'ccf.cif' in self.files['sas_ccf']): ccf_exists = True
             else:
                 # Check if ccf.cif file path given by user exists.
                 try:
                     os.path.exists(self.files['sas_ccf'])
-                    self.logger.info('{0} is present'.format(self.files['sas_ccf']))
+                    self.logger.info('{0} is '\
+                    'present'.format(self.files['sas_ccf']))
                     ccf_exists = True
                 except FileExistsError:
-                    # The only way to get this error is if the user provided a bad filename or path.
-                    self.logger.error('File {0} not present! Please check if path is correct!'.format(self.files['sas_ccf']))
-                    print('File {0} not present! Please check if path is correct!'.format(self.files['sas_ccf']))
+                    # The only way to get this error is if the user provided a 
+                    # bad filename or path.
+                    self.logger.error('File {0} not present! Please check if '\
+                    'path is correct!'.format(self.files['sas_ccf']))
+                    print('File {0} not present! Please check if path is '\
+                    'correct!'.format(self.files['sas_ccf']))
                     sys.exit(1)
             
             # Looking for *SUM.SAS file.
@@ -2333,13 +2380,18 @@ class ObsID(FileMain):
             else:
                 # Check if *SUM.SAS file path given by user exists.
                 try:
-                    SUM_exists = self.get_SUM_SAS(user_defined_file=self.files['sas_odf'])
+                    SUM_exists = self.get_SUM_SAS(user_defined_file = 
+                                                  self.files['sas_odf'])
                     if SUM_exists:
-                        self.logger.info('{0} is present'.format(self.files['sas_odf']))
+                        self.logger.info('{0} is '\
+                        'present'.format(self.files['sas_odf']))
                 except FileExistsError:
-                    # The only way to get this error is if the user provided a bad filename or path.
-                    self.logger.error('File {0} not present! Please check if path is correct!'.format(self.files['sas_odf']))
-                    print('File {0} not present! Please check if path is correct!'.format(self.files['sas_odf']))
+                    # The only way to get this error is if the user provided a 
+                    # bad filename or path.
+                    self.logger.error('File {0} not present! Please check if ' \
+                    'path is correct!'.format(self.files['sas_odf']))
+                    print('File {0} not present! Please check if path is ' \
+                    'correct!'.format(self.files['sas_odf']))
                     sys.exit(1)
 
             if ccf_exists and SUM_exists:
@@ -2355,7 +2407,8 @@ class ObsID(FileMain):
                 if self.output_to_terminal:
                     print('SAS_ODF = {0}'.format(self.files['sas_odf']))
             else:
-                # If either the ccf.cif or *SUM.SAS files are not present, then run calibration.
+                # If either the ccf.cif or *SUM.SAS files are not present, 
+                # then run calibration.
                 self._run_calibration(cifbuild_opts,odfingest_opts) 
             
             # Set 'SAS_ODF' enviroment variable.
@@ -2521,6 +2574,11 @@ class ObsID(FileMain):
             Whether to for the SAS task to rerun. Defaults to False.
         logFile : str
             Custom log file name. Defaults to '{sas task}.log'.
+
+        Raises
+        ------
+        IsADirectoryError
+            Obs ID directory not found.
         """
 
         # Make sure we are in the right place!
@@ -2528,9 +2586,11 @@ class ObsID(FileMain):
             os.chdir(self.work_dir)
             self.logger.debug('Changing into work_dir')
         else:
-            print(f'The directory for the observation ID ({self.obsid}) does not seem to exist!\n    {self.obs_dir}')
+            print(f'The directory for the observation ID ({self.obsid}) does '\
+                  f'not seem to exist!\n    {self.obs_dir}')
             print('Has \'calibrate_odf\' been run?')
-            raise Exception(f'Problem with the directory for odfID = {self.obsid}!')
+            raise IsADirectoryError(f'Obs ID directory for '\
+                                    f'obsid = {self.obsid} not found!')
         
         self.logger.debug('Finding event list files')
         self.find_event_list_files(print_output=False)
@@ -2562,9 +2622,11 @@ class ObsID(FileMain):
 
         if not active:
             # Instrument not active, cannot run
-            self.logger.info(f'{inst} was not active for this ObsID. Not running {task}.')
+            self.logger.info(f'{inst} was not active for this ObsID. '\
+            f'Not running {task}.')
             if self.output_to_terminal:
-                print(f' > {inst} was not active for this ObsID. Not running {task}.')
+                print(f' > {inst} was not active for this ObsID. '\
+                      f'Not running {task}.')
         elif rerun:
             self.logger.debug(f'rerun set as True. Running {task}.')
             # rerun, don't bother checking for event lists
@@ -2723,10 +2785,10 @@ class ObsID(FileMain):
         if exists:
             self.logger.info(f'File {MANIFEST} exists')
         else:
-            self.logger.critical('MANIFEST File not present. \\
-                                    Incomplete number of ODF files.')
-            raise FileNotFoundError('MANIFEST File not present with ODF. \\
-                                    Incomplete number of ODF files.')
+            self.logger.critical('MANIFEST File not present. '\
+                                 'Incomplete number of ODF files.')
+            raise FileNotFoundError('MANIFEST File not present with ODF. '\
+                                    'Incomplete number of ODF files.')
 
         # Now we start preparing the SAS_ODF and SAS_CCF
         self.logger.info(f'Setting SAS_ODF = {self.odf_dir}')
@@ -2797,13 +2859,13 @@ class ObsID(FileMain):
                 if 'PATH' in line:
                     key, path = line.split()
                     if os.path.abspath(path) != os.path.abspath(self.odf_dir):
-                        self.logger.error(f'SAS summary file PATH {path} \\
-                                            mismatches {self.odf_dir}')
-                        raise Exception(f'SAS summary file PATH {path} \\
-                                          mismatches {self.odf_dir}')
+                        self.logger.error(f'SAS summary file PATH {path} '\
+                                          f'mismatches {self.odf_dir}')
+                        raise Exception(f'SAS summary file PATH {path} '\
+                                        f'mismatches {self.odf_dir}')
                     else:
-                        self.logger.info(f'Summary file PATH keyword matches \\
-                                           {self.odf_dir}')
+                        self.logger.info(f'Summary file PATH keyword matches '\
+                                         f'{self.odf_dir}')
 
         self.get_active_instruments()
 
