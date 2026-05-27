@@ -53,29 +53,6 @@ class FileMain:
     """
     Super Class for handling XMM data files.
 
-    !!! NOT intended for use by the end user. !!!
-    !!! End user should use the child classes !!!
-    !!! 'ObsID' and 'PPSFiles'.               !!!
-
-    Inputs:
-    Required:
-        - obsid: 10 digit number of the Obs ID
-
-    Optional:
-        - data_dir   : Data directory. If none is given, 
-                       will use (in this order):
-                       1. data_dir set in configuration file
-                       2. Current directory
-        - logfilename: Name of log file where all output
-                       will be written. Overrides default
-                       log file names.
-        - tasklogdir : Directory for log files. Overrides
-                       default log directory.
-        - output_to_terminal: If True, then logger information
-                              will be output to the terminal.
-        - output_to_file: If True, then logger information will
-                          be written to a log file.
-
     Available Methods:
 
         - download_ODF_data: Download ODFs for a single Obs ID.
@@ -95,7 +72,7 @@ class FileMain:
         - quick_lcplot: Takes an event list and creates a light 
                         curve and plots it.
 
-        - find_event_list_files: Searches  obs_dir for event lists 
+        - find_event_list_files: Searches obs_dir for event lists 
                         created by the procs or chains.
 
         - find_rgs_spectra_files: Searches obs_dir for RGS spectra.
@@ -155,6 +132,27 @@ class FileMain:
         - _sas_talk: Can be used to set SAS environment variables.
 
         - _remove_attr: Removes and attribute from the object.
+
+        Parameters
+        ----------
+        obsid : str or int
+            10 digit number of the Obs ID.
+        data_dir : str, optional
+            Data directory. Defaults to the current directory or set by 
+            sas_config file.
+        logfilename : str, optional
+            Name of log file where all output will be written. Overrides 
+            default log file names. Defaults to either {obsid}.log or 
+            {taskname}.log.
+        tasklogdir : str, optional
+            Directory for log files. Overrides default log directory. Defaults 
+            to work_dir.
+        output_to_terminal : bool, optional
+            Whether to print log output to the terminal.
+            Defaults to True.
+        output_to_file : bool, optional
+            Whether to write log output to a file.
+            Defaults to False.
     """
     def __init__(self, obsid, 
                  data_dir    = None,
@@ -162,7 +160,10 @@ class FileMain:
                  tasklogdir  = None,
                  output_to_terminal = True,
                  output_to_file     = False):
-        
+        """
+        Initialisation method for file handling super class. Checks for the 
+        presence of data files for the obsid. Sets file links.
+        """        
         if isinstance(obsid, numbers.Number):
             obsid = f'{obsid:010}'
         self.obsid       = obsid
@@ -359,53 +360,47 @@ class FileMain:
         return
 
     def download_ODF_data(self,
-                          repo        = None,
-                          data_dir    = None,
-                          overwrite   = False,
-                          proprietary = False,
-                          credentials_file = None,
-                          encryption_key   = None):
+                          repo: str = None,
+                          data_dir: str = None,
+                          overwrite: bool = False,
+                          proprietary: bool = False,
+                          credentials_file: str = None,
+                          encryption_key: str = None)::
         """
         This handles preliminary setup for downloading data files, then 
         calls download_data (as "dl_data") from sasutils.
 
-        Inputs:
-            --REQUIRED--
-
-                NONE
-
-            --OPTIONAL--
-
-            --repo:           (string): Which repository to use to download data. 
-                                        Default: 'esa'
-                                        Can be either
-                                        'esa' (data from Europe/ESA) or 
-                                        'heasarc' (data from North America/NASA) or
-                                        'aws' (data from AWS s3 bucket (NASA)) or
-                                        'fornax' (if user is on Fornax)
-
-            --data_dir:  (string/path): Path to directory where the data will be 
-                                        downloaded. Automatically creates directory
-                                        data_dir/obsid.
-                                        Default: Default from sas_config file, or
-                                        current working directory.
-
-            --overwrite:     (boolean): If True will force overwrite of data if obsid 
-                                        data already exists in data_dir/obsid.
-
-            --proprietary    (boolean): Flag for downloading proprietary data from
-                                        the XSA at ESA.
-
-            --credentials_file (filename): Path and filename of file containing XSA
-                                        username and password. For proprietary data
-                                        only. (Optinal, astroquery will ask user 
-                                        for username and password if filename
-                                        not given.)
-
-            --encryption_key: (string): Encryption key for proprietary data, a string 32 
-                                        characters long. -OR- path to file containing 
-                                        ONLY the encryption key.
-                                        Note: ONLY used for data from the HEASARC.
+        Parameters
+        ----------
+        repo : str, optional
+            Which repository to use to download data. Accepted values are, 
+            'ESA' (data from the XSA), 
+            'NASA' (data from the HEASARC), 
+            'AWS' (data from AWS s3 bucket (NASA)), 
+            'Fornax' (if user is on Fornax),
+            'SciServer' (if user is on SciServer).
+            Defaults to 'ESA' ('XSA') or set by sas_config file.
+        data_dir : str | Path, optional
+            Path to directory where the data will be downloaded. Automatically 
+            creates directory 'data_dir/obsid'. 
+            Default from sas_config file, or current working directory.
+        overwrite : bool, optional
+            If True will force overwrite of data if obsid data already exists 
+            in 'data_dir/obsid'. 
+            Defaults to False.
+        proprietary : bool, optional
+            Flag for downloading proprietary data from the XSA at ESA. 
+            Defaults to False.
+        credentials_file : str, optional
+            Path and filename of file containing XSA username and password. For 
+            proprietary data only. (If not given then astroquery will ask user 
+            for username and password.) 
+            Defaults to None.
+        encryption_key : str, optional
+            Encryption key for proprietary data, a string 32 characters long. 
+            -OR- path to file containing ONLY the encryption key. Note: ONLY 
+            used for data from the HEASARC. 
+            Defaults to None.
         """
         
         # Set data_dir
@@ -491,22 +486,23 @@ class FileMain:
         return
         
     def _download_PPS_data(self,
-                          repo      = None,
-                          data_dir  = None,
-                          overwrite = False,
-                          proprietary      = False,
-                          credentials_file = None,
-                          encryption_key   = None,
-                          PPS_subset   = False,
-                          instname     = None,
-                          expflag      = None,
-                          expno        = None,
-                          product_type = None,
-                          datasubsetno = None,
-                          sourceno     = None,
-                          extension    = None,
-                          filename     = None,
-                          **kwargs):
+                           repo: str = None,
+                           data_dir: str | Path  = None,
+                           overwrite: bool = False,
+                           proprietary: bool = False,
+                           credentials_file: str = None,
+                           encryption_key: str = None,
+                           PPS_subset: bool = False,
+                           instname: str = None,
+                           expflag: str = None,
+                           expno: str = None,
+                           product_type: str = None,
+                           datasubsetno: str = None,
+                           sourceno: str = None,
+                           extension: str = None,
+                           filename: str = None,
+                           **kwargs
+                          ):
         """
         >>>>> NOTE <<<<<
         This function is semi-private since the subclasses to 'FileMain', 
@@ -524,62 +520,73 @@ class FileMain:
         This handles preliminary setup for downloading data files, then 
         calls download_data (as "dl_data") from sasutils.
 
-        Inputs:
-            --REQUIRED--
+        If only a subset of PPS files is needed (i.e. not every thing) then set
+        PPS_subset to True. The remaining inputs are used for downloading groups 
+        of PPS files using a particular file pattern. Using these requires an 
+        understanding of PPS filenames.
 
-                NONE
-
-            --OPTIONAL--
-
-            --repo:           (string): Which repository to use to download data. 
-                                        Default: 'esa'
-                                        Can be either
-                                        'esa' (data from Europe/ESA) or 
-                                        'heasarc' (data from North America/NASA) or
-                                        'aws' (data from AWS s3 bucket (NASA)) or
-                                        'fornax' (if user is on Fornax)
-
-            --data_dir:  (string/path): Path to directory where the data will be 
-                                        downloaded. Automatically creates directory
-                                        data_dir/odfid.
-                                        Default: Default from sas_config file, or
-                                        current working directory.
-
-            --overwrite:     (boolean): If True will force overwrite of data if odfid 
-                                        data already exists in data_dir/odfid.
-
-            --proprietary    (boolean): Flag for downloading proprietary data from
-                                        the XSA at ESA.
-
-            --credentials_file (filename): Path and filename of file containing XSA
-                                        username and password. For proprietary data
-                                        only. (Optinal, astroquery will ask user 
-                                        for username and password if filename
-                                        not given.)
-
-            --encryption_key: (string): Encryption key for proprietary data, a string 32 
-                                        characters long. -OR- path to file containing 
-                                        ONLY the encryption key.
-                                        Note: ONLY used for data from the HEASARC.
-
-            --PPS_subset:    (boolean): Set PPS_subset=True if downloading a subset of PPS
-                                        files form the XMM-Newton archive.
-
-            --filename:       (string): If the exact PPS file name is known, then this can
-                                        be used to download a single PPS file.
-
-            
-            The remaining inputs are used for downloading groups of PPS files using a 
-            particular file pattern. Using these requires an understanding of PPS 
-            filenames.
-            
-                instname    : instrument name
-                expflag     : Exposure flag
-                expno       : Exposure number
-                product_type: Product type
-                datasubsetno: data subset number/character
-                sourceno    : Source number or slew step number
-                extension   : File format
+        Parameters
+        ----------
+        repo : str, optional
+            Which repository to use to download data. Accepted values are, 
+            'ESA' (data from the XSA), 
+            'NASA' (data from the HEASARC), 
+            'AWS' (data from AWS s3 bucket (NASA)), 
+            'Fornax' (if user is on Fornax),
+            'SciServer' (if user is on SciServer).
+            Defaults to 'ESA' ('XSA') or set by sas_config file.
+        data_dir : str | Path, optional
+            Path to directory where the data will be downloaded. Automatically 
+            creates directory 'data_dir/obsid'. 
+            Default from sas_config file, or current working directory.
+        overwrite : bool, optional
+            If True will force overwrite of data if obsid data already exists 
+            in 'data_dir/obsid'. 
+            Defaults to False.
+        proprietary : bool, optional
+            Flag for downloading proprietary data from the XSA at ESA. 
+            Defaults to False.
+        credentials_file : str, optional
+            Path and filename of file containing XSA username and password. For 
+            proprietary data only. (If not given then astroquery will ask user 
+            for username and password.) 
+            Defaults to None.
+        encryption_key : str, optional
+            Encryption key for proprietary data, a string 32 characters long. 
+            -OR- path to file containing ONLY the encryption key. Note: ONLY 
+            used for data from the HEASARC. 
+            Defaults to None.
+        PPS_subset : bool, optional
+            Set PPS_subset=True if downloading a subset of PPS.
+            Defaults to False.
+        instname : str, optional
+            Instrument name.
+            Defaults to None.
+        expflag : str, optional
+            Exposure flag.
+            Defaults to None.
+        expno : int or str, optional
+            Exposure number.
+            Defaults to None.
+        product_type : str, optional
+            PPS product type.
+            Defaults to None.
+        datasubsetno : str, optional
+            Data subset number/character.
+            Defaults to None.
+        sourceno : int or str, optional
+            Source number or slew step number.
+            Defaults to None.
+        extension : str, optional
+            File format/extension.
+            Defaults to None.
+        filename : str, optional
+            If the exact PPS file name is known, then this can be used to 
+            download a single PPS file.
+            Defaults to None.
+        **kwargs
+            Additional keyword arguments passed through to underlying download 
+            handler (Astroquery).
         """
         
         # Set data_dir
@@ -727,12 +734,12 @@ class FileMain:
         return
     
     def download_ALL_data(self,
-                          repo        = None,
-                          data_dir    = None,
-                          overwrite   = True,
-                          proprietary      = False,
-                          credentials_file = None,
-                          encryption_key   = None):
+                          repo: str = None,
+                          data_dir: str = None,
+                          overwrite: bool = True,
+                          proprietary: bool = False,
+                          credentials_file: str = None,
+                          encryption_key: str = None):
         """
         This function assumes you want to overwrite everything in the
         obs_dir. Makes no checks.
@@ -740,43 +747,37 @@ class FileMain:
         This handles preliminary setup for downloading data files, then 
         calls download_data (as "dl_data") from sasutils.
 
-        Inputs:
-            --REQUIRED--
-
-                NONE
-
-            --OPTIONAL--
-
-            --repo:           (string): Which repository to use to download data. 
-                                        Default: 'esa'
-                                        Can be either
-                                        'esa' (data from Europe/ESA) or 
-                                        'heasarc' (data from North America/NASA) or
-                                        'aws' (data from AWS s3 bucket (NASA)) or
-                                        'fornax' (if user is on Fornax)
-
-            --data_dir:  (string/path): Path to directory where the data will be 
-                                        downloaded. Automatically creates directory
-                                        data_dir/obsid.
-                                        Default: Default from sas_config file, or
-                                        current working directory.
-
-            --overwrite:     (boolean): If True will force overwrite of data if obsid 
-                                        data already exists in data_dir/obsid.
-
-            --proprietary    (boolean): Flag for downloading proprietary data from
-                                        the XSA at ESA.
-
-            --credentials_file (filename): Path and filename of file containing XSA
-                                        username and password. For proprietary data
-                                        only. (Optinal, astroquery will ask user 
-                                        for username and password if filename
-                                        not given.)
-
-            --encryption_key: (string): Encryption key for proprietary data, a string 32 
-                                        characters long. -OR- path to file containing 
-                                        ONLY the encryption key.
-                                        Note: ONLY used for data from the HEASARC.
+        Parameters
+        ----------
+        repo : str, optional
+            Which repository to use to download data. Accepted values are, 
+            'ESA' (data from the XSA), 
+            'NASA' (data from the HEASARC), 
+            'AWS' (data from AWS s3 bucket (NASA)), 
+            'Fornax' (if user is on Fornax),
+            'SciServer' (if user is on SciServer).
+            Defaults to 'ESA' ('XSA') or set by sas_config file.
+        data_dir : str | Path, optional
+            Path to directory where the data will be downloaded. Automatically 
+            creates directory 'data_dir/obsid'. 
+            Default from sas_config file, or current working directory.
+        overwrite : bool, optional
+            If True will force overwrite of data if obsid data already exists 
+            in 'data_dir/obsid'. 
+            Defaults to True.
+        proprietary : bool, optional
+            Flag for downloading proprietary data from the XSA at ESA. 
+            Defaults to False.
+        credentials_file : str, optional
+            Path and filename of file containing XSA username and password. For 
+            proprietary data only. (If not given then astroquery will ask user 
+            for username and password.) 
+            Defaults to None.
+        encryption_key : str, optional
+            Encryption key for proprietary data, a string 32 characters long. 
+            -OR- path to file containing ONLY the encryption key. Note: ONLY 
+            used for data from the HEASARC. 
+            Defaults to None.
         """
         
         # Set data_dir
@@ -839,17 +840,14 @@ class FileMain:
 
         return
     
-    def run_MyTask(self, taskname, 
-                   inargs = None, 
+    def run_MyTask(self, 
+                   taskname: str, 
+                   inargs: dict | list | str = {}, 
                    **kwargs):
         """
         This acts as a wrapper around 'MyTask'. This provides a way of calling
         SAS tasks, while using the values set when the 'ObsID' object was 
         instantiated.
-
-        Required inputs (just like MyTask):
-            taskname
-            inargs
 
         Optional inputs (just like MyTask, but **only** use these if you want 
         them to be different from the values used when instantiating 'ObsID'):
@@ -859,10 +857,27 @@ class FileMain:
             output_to_file
             logger (Only in very rare circumstances **DO NOT USE** unless you
                     know exactly what you are doing!!)
+        
+        Parameters
+        ----------
+        taskname : str
+            Name of the SAS task to be run.
+        inargs : dict | list | str
+            Input arguments for the SAS task.
+        logfilename : str, optional
+            Name of log file where all output will be written. Overrides 
+            default log file names. Defaults to either {obsid}.log or 
+            {taskname}.log.
+        tasklogdir : str, optional
+            Directory for log files. Overrides default log directory. Defaults 
+            to work_dir.
+        output_to_terminal : bool, optional
+            Whether to print log output to the terminal.
+            Defaults to True.
+        output_to_file : bool, optional
+            Whether to write log output to a file.
+            Defaults to False.
         """
-
-        if inargs is None:
-            inargs = {}
 
         MT = MyTask(taskname, inargs, 
                     logfilename = kwargs.get('logfilename', self.logfilename), 
@@ -871,42 +886,57 @@ class FileMain:
                     output_to_file     = kwargs.get('output_to_file', self.output_to_file),
                     logger = kwargs.get('logger', None)).run()
 
-    def quick_eplot(self,fits_event_list_file,
-                    image_file = 'image.fits',
-                    xcolumn    = 'X',
-                    ycolumn    = 'Y',
-                    ximagesize = '600',
-                    yimagesize = '600',
-                    expression = None,
-                    vmin = 1.0,
-                    vmax = 10.0,
-                    **kwargs):
+    def quick_eplot(self,fits_event_list_file: str,
+                    image_file: str = 'image.fits',
+                    xcolumn: str = 'X',
+                    ycolumn: str = 'Y',
+                    ximagesize: str | int = '600',
+                    yimagesize: str | int = '600',
+                    expression: str = None,
+                    vmin: float | int = 1.0,
+                    vmax: float | int = 10.0,
+                    **kwargs
+                   ) -> Axes:
         """
-        Quick plot function for EPIC event lists. As input takes an 
-        event list and uses 'evselect' to create a FITS image file.
+        Quick plot function for EPIC event lists. Uses 'evselect' to create a 
+        FITS image file. All standard inputs to 'MyTask' can be passed in as 
+        optional arguments.
 
-        Inputs
+        Parameters
+        ----------
+        fits_event_list_file : str
+            Filename of event list in FITS format
+        image_file : str, optional
+            Output filename of the image FITS file, by default 'image.fits'
+        xcolumn : str, optional
+            FITS file header name for X column data, by default 'X'
+        ycolumn : str, optional
+            FITS file header name for Y column data, by default 'Y'
+        ximagesize : str | int, optional
+            Output image X resolution in pixels, by default '600'
+        yimagesize : str | int, optional
+            Output image Y resolution in pixels, by default '600'
+        expression : str, optional
+            Filtering expression to be used for 'evselect', by default None
+        vmin : float | int, optional
+            Min value for color map, by default 1.0
+        vmax : float | int, optional
+            Max value for color map, by default 10.0
+        xlabel : str, optional 
+            X axis plot label, by default RA
+        ylabel : str, optional 
+            Y axis plot label, by default DEC
+        title : str, optional 
+            Plot title, by default {instrument} Image
+        save_file : bool, optional
+            Whether or not to save an image of the plot, by default False
+        out_fname : str, optional
+            Output filename of the plot image file, by default image.png
 
-        (Required)
-            fits_event_list_file: Filename of event list.
-
-        (Optional)
-            image_file: Output filename of the image file.
-            xcolumn: FITS file header name for X column data.
-            ycolumn: FITS file header name for Y column data.
-            ximagesize: Output image X resolution in pixels.
-            yimagesize: Output image Y resolution in pixels.
-            expression: Filtering expression to be used for 'evselect'.
-            vmin: Min value for color map.
-            vmax: Max value for color map.
-            xlabel: X axis plot label.
-            ylabel: Y axis plot label.
-            title : Plot title.
-            save_file: If set to True, then a .png image of the plot will be saved.
-            out_fname: Output filename of the .png plot image.
-
-        All standard inputs to 'MyTask' can be passed in as optional
-        arguments.
+        Returns
+        -------
+        Axes
+            Handle to the plot axis.
         """
 
         # Change to work directory.
@@ -954,34 +984,48 @@ class FileMain:
 
         return ax
     
-    def quick_implot(self,image_file,
-                     xlabel = 'RA',
-                     ylabel = 'Dec',
-                     title  = None,
-                     vmin   = 1.0,
-                     vmax   = 10.0,
-                     grid   = True,
-                     save_file = False,
-                     out_fname = 'image.png'):
+    def quick_implot(self,image_file: str,
+                     xlabel: str = "RA",
+                     ylabel: str = "Dec",
+                     title: str = None,
+                     vmin: float = 1.0,
+                     vmax: float = 10.0,
+                     grid: bool = True,
+                     save_file: bool = False,
+                     out_fname: str = "image.png"
+                    ) -> Axes:
         """
-        Quick plot function for a FITS image file. As input takes an 
-        FITS image file.
+        Quick plot function for a FITS image file.
 
-        Note: This takes a FITS image file, NOT an event list. 
+        This function takes a FITS image file (not an event list) and produces a quick-look
+        plot of the image data.
 
-        Inputs
+        Parameters
+        ----------
+        image_file : str
+            Filename of the FITS image file.
+        xlabel : str, optional
+            Label for the X axis. Defaults to 'RA'.
+        ylabel : str, optional
+            Label for the Y axis. Defaults to 'Dec'.
+        title : str, optional
+            Title for the plot. Defaults to '{instrument} Image'.
+        vmin : float, optional
+            Minimum value for the color map. Defaults to 1.0.
+        vmax : float, optional
+            Maximum value for the color map. Defaults to 10.0.
+        grid : bool, optional
+            Whether to display a grid on the plot face. Defaults to True.
+        save_file : bool, optional
+            Whether to save the plot as a file. Defaults to False.
+        out_fname : str, optional
+            Output filename for the saved plot. Defaults to 'image.png'.
 
-        (Required)
-            image_file: Filename of FITS image file.
+        Returns
+        -------
+        Axes
+            Handle to the plot axis.
 
-        (Optional)
-            vmin: Min value for color map.
-            vmax: Max value for color map.
-            xlabel: X axis plot label.
-            ylabel: Y axis plot label.
-            save_file: If set to True, then a .png image of the plot will be saved.
-            out_fname: Output filename of the .png plot image.
-        
         """
 
         if title is None:
@@ -1001,18 +1045,47 @@ class FileMain:
 
         return ax
     
-    def quick_lcplot(self,fits_event_list_file,
-                     light_curve_file = 'light_curve.fits',
-                     timebinsize      = '100',
-                     tstart = None,
-                     tend   = None,
-                     **kwargs):
+    def quick_lcplot(self,fits_event_list_file: str,
+                     light_curve_file: str = "light_curve.fits",
+                     timebinsize: str = "100",
+                     tstart: float | None = None,
+                     tend: float | None = None,
+                     title: str = None,
+                     save_file: bool = False,
+                     out_fname: str = "light_curve.png",
+                     **kwargs
+                    ) -> Axes:
         """
-        Quick plot function to generate a light curve. As input takes an 
-        event list and uses 'evselect' to create a FITS image file.
+        Quick plot function to generate a light curve.
 
-        All standard inputs to 'MyTask' can be passed in as optional
-        arguments.
+        This function produces a light curve from a FITS event list. All 
+        standard inputs to 'MyTask' may be passed as optional arguments.
+
+        Parameters
+        ----------
+        fits_event_list_file : str
+            Input event list in FITS format.
+        light_curve_file : str, optional
+            Name of the output FITS file containing the light curve.
+            Defaults to 'light_curve.fits'.
+        timebinsize : str, optional
+            Size of the time bins. Defaults to '100'.
+        tstart : float, optional
+            Start time for plotting. Defaults to None.
+        tend : float, optional
+            End time for plotting. Defaults to None.
+        title : str, optional
+            Title for the plot. Defaults to '{instrument} Light Curve'.
+        save_file : bool, optional
+            Whether to save the plot as a file. Default is False.
+        out_fname : str, optional
+            Name of the output plot file. Defaults to 'light_curve.png'
+
+        Returns
+        -------
+        Axes
+            Plot axis handle.
+
         """
         
         if isinstance(timebinsize, numbers.Number):
@@ -1035,20 +1108,21 @@ class FileMain:
                output_to_file     = kwargs.get('output_to_file', False),
                logger = kwargs.get('logger', None)).run()
 
-        with fits.open(fits_event_list_file) as hdu:
-            instrument = hdu[0].header['INSTRUME']
+        if title is None:
+            with fits.open(fits_event_list_file) as hdu:
+                instrument = hdu[0].header['INSTRUME']
+            title = f'{instrument} Light Curve'
         
         ax = qlcp(light_curve_file,
                   tstart = tstart,
                   tend   = tend,
-                  title  = kwargs.get('title', f'{instrument} Light Curve'),
-                  save_file = kwargs.get('save_file', False),
-                  out_fname = kwargs.get('out_fname', 'light_curve.png'))
+                  title  = title,
+                  save_file = save_file,
+                  out_fname = out_fname)
 
         return ax
-        
-    def find_event_list_files(self,print_output=True):
-
+ 
+    def find_event_list_files(self, print_output: bool = True):
         """
         Checks the observation directory (obs_dir) for basic unfiltered 
         event list files created by 'epproc', 'emproc', 'epchain', 
@@ -1062,7 +1136,13 @@ class FileMain:
             'M2evt_list'
             'R1evt_list'
             'R2evt_list'
+
+        Parameters
+        ----------
+        print_output : bool, optional
+            Print list of files found, by default True
         """
+        
         self.logger.debug('Entering find_event_list_files')
 
         file_keys = ['PNevt_list','M1evt_list','M2evt_list','R1evt_list','R2evt_list']
@@ -1109,13 +1189,17 @@ class FileMain:
         self.logger.debug('Exiting find_event_list_files')
         return
     
-    def find_rgs_spectra_files(self,print_output=True):
+    def find_rgs_spectra_files(self, print_output: bool = True):
         """
         Check for RGS spectra files created by rgsproc. Adds them to 
         'files' dictrionary with the keys:
 
             'R1SPEC'
             'R2SPEC'
+        Parameters
+        ----------
+        print_output : bool, optional
+            Print list of files found, by default True
         """
         self.logger.debug('Entering find_rgs_spectra_files')
 
@@ -1150,10 +1234,13 @@ class FileMain:
     
     def get_cal_ind(self):
         """
-        --Not intended to be used by the end user. Internal use only.--
-
         Checks for the calibration index file (ccf.cif). If it exists, 
         inserts file name in 'files' dict.
+
+        Returns
+        -------
+        str
+            Filename and path of the calibration index file.
         """
         self.logger.debug('Entering get_cal_ind')
 
@@ -1176,12 +1263,20 @@ class FileMain:
         self.logger.debug('Exiting get_cal_ind')
         return self.files['sas_ccf']
     
-    def get_SUM_SAS(self,user_defined_file=None):
+    def get_SUM_SAS(self,user_defined_file: str = None) -> bool:
         """
-        --Not intended to be used by the end user. Internal use only.--
+        Checks for the *SUM.SAS file.
 
-        Checks for the *SUM.SAS file. Making this a function since it is 
-        used in several places.
+        Parameters
+        ----------
+        user_defined_file : str, optional
+            Filename and path of the *SUM.SAS file, checks if it is valid. 
+            By default it will search the obs_dir for the *SUM.SAS file.
+
+        Returns
+        -------
+        bool
+            Returns True if the *SUM.SAS file is found.
         """
         self.logger.debug('Entering get_SUM_SAS')
 
@@ -1264,7 +1359,8 @@ class FileMain:
 
     def resolve_obs_dir(self):
         """
-        Finds files in the obs_dir and stores paths and file names in self.files.
+        Finds files in the obs_dir and stores paths and file names in 
+        self.files.
         """
 
         self.files['ODF'] = self._get_list_of_ODF_files()
@@ -1282,6 +1378,12 @@ class FileMain:
         Stores the information as a dictionary named 'obs_info'.
 
         Also returns the dictionary.
+
+        Returns
+        -------
+        dict
+            Dictionary containing the observation information from the 
+            HEASARC TAP service.
         """
 
         tab = self.return_tap_table()
@@ -1298,6 +1400,12 @@ class FileMain:
         Retrieves information on the Obs ID using the HEASARC TAP service.
 
         Returns the data as an Astropy table.
+
+        Returns
+        -------
+        Table
+            Astropy table containing the observation information from the 
+            HEASARC TAP service.
         """
 
         query = """SELECT * FROM xmmmaster WHERE obsid='{0}'""".format(self.obsid)
@@ -1364,7 +1472,7 @@ class FileMain:
 
         return
     
-    def write_bash_source_script(self, filename='set_env_variables.sh'):
+    def write_bash_source_script(self, filename: str = 'set_env_variables.sh'):
         """
         For diagnostic purposes. Will write a bash file that can be
         sourced from the command line to set key environment variables 
@@ -1381,6 +1489,12 @@ class FileMain:
             > source set_env_variables.sh
         --or--
             > . set_env_variables.sh
+
+        Parameters
+        ----------
+        filename : str, optional
+            Output filename of the shell script. Defaults to 
+            'set_env_variables.sh' in the work_dir.
         """
 
         os.chdir(self.work_dir)
@@ -1396,13 +1510,31 @@ class FileMain:
             file.writelines(file_contents)
 
     def _reset_logger(self,
-                       logbasename = None,
-                       logfilename = None,
-                       tasklogdir  = None,
-                       output_to_terminal = True,
-                       output_to_file     = False):
+                       logbasename: str = None,
+                       logfilename: str = None,
+                       tasklogdir: str  = None,
+                       output_to_terminal: bool = True,
+                       output_to_file: bool     = False):
         """
         Resets the logger using new inputs.
+
+        Parameters
+        ----------
+        logbasename : str, optional
+            Basename of the log file to generate the log filename.
+        logfilename : str, optional
+            Name of log file where all output will be written. Overrides 
+            default log file names. Defaults to either {obsid}.log or 
+            {taskname}.log.
+        tasklogdir : str, optional
+            Directory for log files. Overrides default log directory. Defaults 
+            to work_dir.
+        output_to_terminal : bool, optional
+            Whether to print log output to the terminal.
+            Defaults to True.
+        output_to_file : bool, optional
+            Whether to write log output to a file.
+            Defaults to False.
         """
         if logbasename is None:
             logbasename = 'ObsID_' + self.obsid
@@ -1422,6 +1554,11 @@ class FileMain:
             4. cwd
 
         If data_dir does not exist then it will be created.
+
+        Parameters
+        ----------
+        data_dir : str
+            Sets the data directory.
         """
         self.logger.debug('Inside _set_data_dir')
         # Where are we?
@@ -1472,9 +1609,12 @@ class FileMain:
     
     def _check_for_ccf_cif(self):
         """
-        --Not intended to be used by the end user. Internal use only.--
-
         Checks if the ccf.cif file exists.
+
+        Returns
+        -------
+        bool
+            Whether or not the ccf.cif file was found.
         """
         exists = False
 
@@ -1488,9 +1628,12 @@ class FileMain:
     
     def _check_for_SUM_SAS(self):
         """
-        --Not intended to be used by the end user. Internal use only.--
-
         Checks if the the *SUM.SAS file exists.
+
+        Returns
+        -------
+        bool
+            Whether or not the *SUM.SAS file was found.
         """
         exists = False
 
@@ -1502,9 +1645,19 @@ class FileMain:
                         exists = True
         return exists
     
-    def _check_for_manifest(self,return_file_name=False):
+    def _check_for_manifest(self,return_file_name: bool = False):
         """
         Checks if manifest file exists.
+
+        Parameters
+        ----------
+        return_file_name : bool, optional
+            Whether or not to return the name of the MANIFEST file.
+        
+        Returns
+        -------
+        str
+            Name of the MANIFEST file.
         """
 
         exists = False
@@ -1523,6 +1676,11 @@ class FileMain:
     def _get_list_of_ODF_files(self):
         """
         Returns list of all files in the the ODF directory.
+
+        Returns
+        -------
+        list
+            List of all files in the odf_dir.
         """
         file_list = []
         if os.path.exists(self.odf_dir):
@@ -1533,6 +1691,11 @@ class FileMain:
     def _get_list_of_PPS_files(self):
         """
         Returns list of all files in the the PPS directory.
+
+        Returns
+        -------
+        list
+            List of all files in the pps_dir.
         """
         file_list = []
         if os.path.exists(self.pps_dir):
@@ -1549,6 +1712,11 @@ class FileMain:
     def _get_list_of_work_files(self):
         """
         Returns list of all files in the the work directory.
+
+        Returns
+        -------
+        list
+            List of all files in the work_dir.
         """
         file_list = []
         if os.path.exists(self.work_dir):
@@ -1563,6 +1731,17 @@ class FileMain:
         Simple wrapper for 'initializesas' defined in init_sas.py.
 
         SAS initialization should happen automatically.
+
+        Parameters
+        ----------
+        sas_dir : str
+            Path to SAS directory.
+        sas_ccfpath : str
+            Path to SAS calibration directory.
+        verbosity : int
+            SAS verbosity value. Defaults to 4.
+        suppress_warning : int
+            SAS suppress warning value. Defaults to 1.
         """
         self.sas_dir = sas_dir
         self.sas_ccfpath = sas_ccfpath
@@ -1577,8 +1756,15 @@ class FileMain:
 
     def _sas_talk(self,verbosity=4,suppress_warning=1):
         """
-        Simple function to set general SAS veriables 'verbosity' 
-        and 'suppress_warning'.
+        Simple function to set general SAS veriables 'verbosity' and 
+        'suppress_warning'.
+
+        Parameters
+        ----------
+        verbosity : int
+            SAS verbosity value. Defaults to 4.
+        suppress_warning : int
+            SAS suppress warning value. Defaults to 1.
         """
 
         self.verbosity = verbosity
@@ -1588,29 +1774,19 @@ class FileMain:
         os.environ['SAS_SUPPRESS_WARNING'] = '{}'.format(self.suppress_warning)
     
     def _remove_attr(self, attr_name):
+        """
+        Removes an attribute from 'self'.
+
+        Parameters
+        ----------
+        attr_name : str
+            Name of attribute to remove from 'self'.
+        """
         if hasattr(self, attr_name): delattr(self, attr_name)
 
 class ObsID(FileMain):
     """
     Class for an Obs ID object.
-    Inputs:
-    Required:
-        - obsid: 10 digit number of the Obs ID
-
-    Optional:
-        - data_dir   : Data directory. If none is given, 
-                       will use (in this order):
-                       1. data_dir set in configuration file
-                       2. Current directory
-        - logfilename: Name of log file where all output
-                       will be written. Overrides default
-                       log file names.
-        - tasklogdir : Directory for log files. Overrides
-                       default log directory.
-        - output_to_terminal: If True, then logger information
-                              will be output to the terminal.
-        - output_to_file: If True, then logger information will
-                          be written to a log file.
 
     Available Methods:
 
@@ -1638,7 +1814,7 @@ class ObsID(FileMain):
         - quick_lcplot: Takes an event list and creates a light 
                         curve and plots it.
 
-        - find_event_list_files: Searches  obs_dir for event lists 
+        - find_event_list_files: Searches obs_dir for event lists 
                         created by the procs or chains.
 
         - find_rgs_spectra_files: Searches obs_dir for RGS spectra.
@@ -1660,6 +1836,32 @@ class ObsID(FileMain):
 
         - get_active_instruments: Searchs the *SUM.SAS or Obs summary
                         files for which instruments were active.
+
+        - write_bash_source_script: Writes a bash file that can be 
+                        sourced to set environment variables for 
+                        the Obs ID. SAS tasks can then be run from 
+                        using terminal.
+    
+    Parameters
+    ----------
+    obsid : str or int
+        10 digit number of the Obs ID.
+    data_dir : str, optional
+        Data directory. Defaults to the current directory or set by 
+        sas_config file.
+    logfilename : str, optional
+        Name of log file where all output will be written. Overrides 
+        default log file names. Defaults to either {obsid}.log or 
+        {taskname}.log.
+    tasklogdir : str, optional
+        Directory for log files. Overrides default log directory. Defaults 
+        to work_dir.
+    output_to_terminal : bool, optional
+        Whether to print log output to the terminal.
+        Defaults to True.
+    output_to_file : bool, optional
+        Whether to write log output to a file.
+        Defaults to False.
     """
     def __init__(self, obsid, 
                  data_dir    = None,
@@ -1667,6 +1869,10 @@ class ObsID(FileMain):
                  tasklogdir  = None,
                  output_to_terminal = True,
                  output_to_file     = False):
+        """
+        Initialisation method for ObsIDs. Checks for the presence of data files 
+        for the obsid. Sets file links.
+        """
         super().__init__(obsid, 
                          data_dir    = data_dir,
                          logfilename = logfilename,
@@ -1675,16 +1881,16 @@ class ObsID(FileMain):
                          output_to_file     = output_to_file)
 
     def basic_setup(self, 
-                    data_dir    = None,
-                    repo        = None,
-                    overwrite   = False,
-                    rerun       = False,
-                    recalibrate = False,
-                    run_epproc  = True,
-                    run_emproc  = True,
-                    run_rgsproc = True,
-                    run_epchain = False,
-                    run_emchain = False,
+                    data_dir: str     = None,
+                    repo: str         = None,
+                    overwrite: bool   = False,
+                    rerun: bool       = False,
+                    recalibrate: bool = False,
+                    run_epproc: bool  = True,
+                    run_emproc: bool  = True,
+                    run_rgsproc: bool = True,
+                    run_epchain: bool = False,
+                    run_emchain: bool = False,
                     **kwargs):
         """
         Function to do all basic analysis tasks. The function will:
@@ -1699,14 +1905,6 @@ class ObsID(FileMain):
 
         If 'run_epchain' is set to 'True', then 'epproc' will not run.
         If 'run_emchain' is set to 'True', then 'emproc' will not run.
-
-        Inputs:
-
-            data_dir:    Data directory.
-            repo:        Download repository ('esa','heasarc','fornax','aws').
-            overwrite:   Remove previous data files and download again.
-            rerun:       Rerun the *procs or *chains.
-            recalibrate: Rerun 'cifbuild' and 'odfingest'.
 
         All input arguments for 'download_ODF_data' and 'calibrate_odf'
         can be passed to 'basic_setup'.
@@ -1796,7 +1994,46 @@ class ObsID(FileMain):
                 - Uses the defaults, but downloads *proprietary* data from 
                   the XSA at ESA. Astroquery will ask for user's Cosmos
                   username and password.
-
+        Parameters
+        ----------
+        data_dir : str, optional
+            Data directory. Defaults to the current directory or set by 
+            sas_config file.
+        repo : str, optional
+            Which repository to use to download data. Accepted values are, 
+            'ESA' (data from the XSA), 
+            'NASA' (data from the HEASARC), 
+            'AWS' (data from AWS s3 bucket (NASA)), 
+            'Fornax' (if user is on Fornax),
+            'SciServer' (if user is on SciServer).
+            Defaults to 'ESA' ('XSA') or set by sas_config file.
+        overwrite : bool, optional
+            If True will force overwrite of data if obsid data already exists 
+            in 'data_dir/obsid'. Defaults to False.
+        rerun : bool, optional
+            Rerun the *procs or *chains.
+            Defaults to False.
+        recalibrate : bool, optional
+            Rerun 'cifbuild' and 'odfingest'.
+            Defaults to False.
+        run_epproc : bool, optional
+            Whether to run the EPIC-pn processing pipeline (`epproc`). 
+            Defaults to True.
+        run_emproc : bool, optional
+            Whether to run the EPIC-MOS processing pipeline (`emproc`). 
+            Defaults to True.
+        run_rgsproc : bool, optional
+            Whether to run the RGS processing pipeline (`rgsproc`). 
+            Defaults to True.
+        run_epchain : bool, optional
+            Whether to run the EPIC-pn chain-level pipeline (`epchain`). 
+            Defaults to False.
+        run_emchain : bool, optional
+            Whether to run the EPIC-MOS chain-level pipeline (`emchain`). 
+            Defaults to False.
+        **kwargs
+            Additional keyword arguments passed to 'download_ODF_data' and 
+            'calibrate_odf'.
         """
 
         self.logger.debug('Starting basic_setup')
@@ -1953,12 +2190,12 @@ class ObsID(FileMain):
         return
             
     def calibrate_odf(self,
-                      obs_dir = None,
-                      sas_ccf = None,
-                      sas_odf = None,
-                      cifbuild_opts  = {},
-                      odfingest_opts = {},
-                      recalibrate    = False):
+                      obs_dir: str | Path  = None,
+                      sas_ccf: str | Path  = None,
+                      sas_odf: str | Path  = None,
+                      cifbuild_opts: dict  = {},
+                      odfingest_opts: dict = {},
+                      recalibrate: bool    = False):
         """
         Before running this function an ObsID object must be created first. e.g.
 
@@ -1979,28 +2216,27 @@ class ObsID(FileMain):
         Optionally the paths to the ccf.cif and *SUM.SAS files can be given through 
         sas_ccf and sas_odf respectively.
 
-        Inputs:
-            --REQUIRED--
-
-                NONE
-
-            --OPTIONAL--
-
-            --obs_dir:  (string/path): Path to the obs directory. If no path 
-                                       given, then will look in 
-                                       data_dir/obsid/. If directory exists then 
-                                       will look for ccf.cif and *SUM.SAS files. 
-                                       Default: None, looks in data_dir/obsid/.
-
-            --sas_ccf:   (string/path): Path to ccf.cif file for obsid.
-
-            --sas_odf:   (string/path): Path to *SUM.SAS file for obsid.
-
-            --cifbuild_opts:    (list): Options for cifbuild.
-
-            --odfingest_opts:   (list): Options for odfingest.
-
-            --recalibrate:   (boolean): If True will rerun odfingest and cifbuild.
+        Parameters
+        ----------
+        obs_dir : str | Path, optional
+            Path to the obs directory. If no path given, then will look in 
+            data_dir/obsid/. If directory exists then will look for ccf.cif and 
+            *SUM.SAS files. Defaults to data_dir/obsid/.
+        sas_ccf : str | Path, optional
+            Path to the Calibration Configuration File (ccf.cif). Defaults to 
+            None.
+        sas_odf : str | Path, optional
+            Path to the *SUM.SAS file. Defaults to None.
+        cifbuild_opts : dict, optional
+            Additional keyword options passed to the SAS `cifbuild` task.
+            Defaults to an empty dictionary.
+        odfingest_opts : dict, optional
+            Additional keyword options passed to the SAS `odfingest` task.
+            Defaults to an empty dictionary.
+        recalibrate : bool, optional
+            Whether to force recalibration even if calibration products already 
+            exist.
+            Defaults to False.
         """
 
         # If user passes in obs_dir
@@ -2141,82 +2377,94 @@ class ObsID(FileMain):
         return
         
     def download_PPS_data(self,
-                          repo      = None,
-                          data_dir  = None,
-                          overwrite = False,
-                          proprietary      = False,
-                          credentials_file = None,
-                          encryption_key   = None,
-                          PPS_subset   = False,
-                          instname     = None,
-                          expflag      = None,
-                          expno        = None,
-                          product_type = None,
-                          datasubsetno = None,
-                          sourceno     = None,
-                          extension    = None,
-                          filename     = None,
-                          **kwargs):
+                          repo: str = None,
+                          data_dir: str | Path  = None,
+                          overwrite: bool = False,
+                          proprietary: bool = False,
+                          credentials_file: str = None,
+                          encryption_key: str = None,
+                          PPS_subset: bool = False,
+                          instname: str = None,
+                          expflag: str = None,
+                          expno: str = None,
+                          product_type: str = None,
+                          datasubsetno: str = None,
+                          sourceno: str = None,
+                          extension: str = None,
+                          filename: str = None,
+                          **kwargs
+                         ):
         """
         This handles preliminary setup for downloading data files, then 
         calls download_data (as "dl_data") from sasutils.
 
-        Inputs:
-            --REQUIRED--
+        If only a subset of PPS files is needed (i.e. not every thing) then set
+        PPS_subset to True. The remaining inputs are used for downloading groups 
+        of PPS files using a particular file pattern. Using these requires an 
+        understanding of PPS filenames.
 
-                NONE
-
-            --OPTIONAL--
-
-            --repo:           (string): Which repository to use to download data. 
-                                        Default: 'esa'
-                                        Can be either
-                                        'esa' (data from Europe/ESA) or 
-                                        'heasarc' (data from North America/NASA) or
-                                        'aws' (data from AWS s3 bucket (NASA)) or
-                                        'fornax' (if user is on Fornax)
-
-            --data_dir:  (string/path): Path to directory where the data will be 
-                                        downloaded. Automatically creates directory
-                                        data_dir/odfid.
-                                        Default: Default from sas_config file, or
-                                        current working directory.
-
-            --overwrite:     (boolean): If True will force overwrite of data if odfid 
-                                        data already exists in data_dir/odfid.
-
-            --proprietary    (boolean): Flag for downloading proprietary data from
-                                        the XSA at ESA.
-
-            --credentials_file (filename): Path and filename of file containing XSA
-                                        username and password. For proprietary data
-                                        only. (Optinal, astroquery will ask user 
-                                        for username and password if filename
-                                        not given.)
-
-            --encryption_key: (string): Encryption key for proprietary data, a string 32 
-                                        characters long. -OR- path to file containing 
-                                        ONLY the encryption key.
-                                        Note: ONLY used for data from the HEASARC.
-
-            --PPS_subset:    (boolean): Set PPS_subset=True if downloading a subset of PPS
-                                        files form the XMM-Newton archive.
-
-            --filename:       (string): If the exact PPS file name is known, then this can
-                                        be used to download a single PPS file.
-
-            
-            The remaining inputs are used for downloading groups of PPS files using a 
-            particular file pattern. Using these requires an understanding of PPS 
-            filenames.
-            
-                instname    : instrument name
-                expflag     : Exposure flag
-                expno       : Exposure number
-                product_type: Product type
-                datasubsetno: data subset number/character
-                sourceno    : Source number or slew step number
-                extension   : File format
+        Parameters
+        ----------
+        repo : str, optional
+            Which repository to use to download data. Accepted values are, 
+            'ESA' (data from the XSA), 
+            'NASA' (data from the HEASARC), 
+            'AWS' (data from AWS s3 bucket (NASA)), 
+            'Fornax' (if user is on Fornax),
+            'SciServer' (if user is on SciServer).
+            Defaults to 'ESA' ('XSA') or set by sas_config file.
+        data_dir : str | Path, optional
+            Path to directory where the data will be downloaded. Automatically 
+            creates directory 'data_dir/obsid'. 
+            Default from sas_config file, or current working directory.
+        overwrite : bool, optional
+            If True will force overwrite of data if obsid data already exists 
+            in 'data_dir/obsid'. 
+            Defaults to False.
+        proprietary : bool, optional
+            Flag for downloading proprietary data from the XSA at ESA. 
+            Defaults to False.
+        credentials_file : str, optional
+            Path and filename of file containing XSA username and password. For 
+            proprietary data only. (If not given then astroquery will ask user 
+            for username and password.) 
+            Defaults to None.
+        encryption_key : str, optional
+            Encryption key for proprietary data, a string 32 characters long. 
+            -OR- path to file containing ONLY the encryption key. Note: ONLY 
+            used for data from the HEASARC. 
+            Defaults to None.
+        PPS_subset : bool, optional
+            Set PPS_subset=True if downloading a subset of PPS.
+            Defaults to False.
+        instname : str, optional
+            Instrument name.
+            Defaults to None.
+        expflag : str, optional
+            Exposure flag.
+            Defaults to None.
+        expno : int or str, optional
+            Exposure number.
+            Defaults to None.
+        product_type : str, optional
+            PPS product type.
+            Defaults to None.
+        datasubsetno : str, optional
+            Data subset number/character.
+            Defaults to None.
+        sourceno : int or str, optional
+            Source number or slew step number.
+            Defaults to None.
+        extension : str, optional
+            File format/extension.
+            Defaults to None.
+        filename : str, optional
+            If the exact PPS file name is known, then this can be used to 
+            download a single PPS file.
+            Defaults to None.
+        **kwargs
+            Additional keyword arguments passed through to underlying download 
+            handler (Astroquery).
         """
 
         # This is a pass-thorugh function for _download_PPS_data.
@@ -2238,12 +2486,12 @@ class ObsID(FileMain):
                                 filename     = filename,
                                 **kwargs)
 
-    def _run_analysis(self, task, inargs, 
-                       rerun   = False,
-                       logFile = None):
+    def _run_analysis(self,
+                      task: str, 
+                      inargs: dict | list | str, 
+                      rerun: bool = False,
+                      logFile: str = None):
         """
-        --Not intended to be used by the end user. Internal use only.--
-
         A wrapper for the wrapper. Yes. I know.
 
         This function is not intended to be used by the end user, but is
@@ -2262,6 +2510,17 @@ class ObsID(FileMain):
             --rgsproc
 
         More will be added as needed.
+
+        Parameters
+        ----------
+        task : str
+            Name of SAS task.
+        inargs : dict | list | str
+            Input arguments for the SAS task to run.
+        rerun : bool
+            Whether to for the SAS task to rerun. Defaults to False.
+        logFile : str
+            Custom log file name. Defaults to '{sas task}.log'.
         """
 
         # Make sure we are in the right place!
@@ -2427,13 +2686,34 @@ class ObsID(FileMain):
             print("Something has gone wrong. I cant find any event list files after running rgsproc. \n")
         self.find_rgs_spectra_files(print_output=False)
     
-    def _run_calibration(self,cifbuild_opts,odfingest_opts):
+    def _run_calibration(self,
+                         cifbuild_opts: dict | list | str,
+                         odfingest_opts: dict | list | str):
         """
         --Not intended to be used by the end user. Internal use only.--
 
         Making this a separate function since it can be called from different 
         inside the function calibrate_odf. Prevents duplication of code.
+
+        Parameters
+        ----------
+        cifbuild_opts : dict | list | str
+            cifbuild input parameters.
+        odfingest_opts : dict | list | str
+            odfingest input parameters.
+
+        Raises
+        ------
+        FileNotFoundError
+            MANIFEST File not present with ODF. Incomplete number of ODF files.
+        FileNotFoundError
+            ccf.cif file not created.
+        FileNotFoundError
+            SUM.SAS file not created.
+        Exception
+            SAS summary file PATH mismatches odf_dir.
         """
+        
         # Run cifbuild and odfingest on the new data.
         os.chdir(self.odf_dir)
         self.logger.info(f'Changed directory to {self.odf_dir}')
@@ -2443,9 +2723,10 @@ class ObsID(FileMain):
         if exists:
             self.logger.info(f'File {MANIFEST} exists')
         else:
-            self.logger.error(f'MANIFEST File not present. Please check ODF!')
-            print(f'MANIFEST File not present. Please check ODF!')
-            sys.exit(1)
+            self.logger.critical('MANIFEST File not present. \\
+                                    Incomplete number of ODF files.')
+            raise FileNotFoundError('MANIFEST File not present with ODF. \\
+                                    Incomplete number of ODF files.')
 
         # Now we start preparing the SAS_ODF and SAS_CCF
         self.logger.info(f'Setting SAS_ODF = {self.odf_dir}')
@@ -2472,8 +2753,8 @@ class ObsID(FileMain):
         if ccfcif and os.path.exists(ccfcif[0]):
             self.logger.info('CIF file {0} created'.format(ccfcif[0]))
         else:
-            self.logger.critical('The ccf.cif was not created')
-            raise Exception('ccf.cif file not created')
+            self.logger.critical('The ccf.cif was not created.')
+            raise FileNotFoundError('ccf.cif file not created.')
         
         # Sets SAS_CCF variable
         fullccfcif = os.path.join(self.work_dir, 'ccf.cif')
@@ -2498,8 +2779,8 @@ class ObsID(FileMain):
         if sumsas and os.path.exists(sumsas[0]):
             self.logger.info('SAS summary file {0} created'.format(sumsas[0]))
         else:
-            self.logger.critical('The SUM.SAS was not created')
-            raise Exception('SUM.SAS file not created')
+            self.logger.critical('The SUM.SAS was not created.')
+            raise FileNotFoundError('SUM.SAS file not created.')
         
         # Set the SAS_ODF to the SUM.SAS file
         fullsumsas = os.path.join(self.work_dir, sumsas[0])
@@ -2516,10 +2797,13 @@ class ObsID(FileMain):
                 if 'PATH' in line:
                     key, path = line.split()
                     if os.path.abspath(path) != os.path.abspath(self.odf_dir):
-                        self.logger.error(f'SAS summary file PATH {path} mismatches {self.odf_dir}')
-                        raise Exception(f'SAS summary file PATH {path} mismatches {self.odf_dir}')
+                        self.logger.error(f'SAS summary file PATH {path} \\
+                                            mismatches {self.odf_dir}')
+                        raise Exception(f'SAS summary file PATH {path} \\
+                                          mismatches {self.odf_dir}')
                     else:
-                        self.logger.info(f'Summary file PATH keyword matches {self.odf_dir}')
+                        self.logger.info(f'Summary file PATH keyword matches \\
+                                           {self.odf_dir}')
 
         self.get_active_instruments()
 
@@ -2614,6 +2898,26 @@ class PPSFiles(FileMain):
 
         - get_active_instruments: Searchs the *SUM.SAS or Obs summary
                         files for which instruments were active.
+    Parameters
+    ----------
+    obsid : str or int
+        10 digit number of the Obs ID.
+    data_dir : str, optional
+        Data directory. Defaults to the current directory or set by 
+        sas_config file.
+    logfilename : str, optional
+        Name of log file where all output will be written. Overrides 
+        default log file names. Defaults to either {obsid}.log or 
+        {taskname}.log.
+    tasklogdir : str, optional
+        Directory for log files. Overrides default log directory. Defaults 
+        to work_dir.
+    output_to_terminal : bool, optional
+        Whether to print log output to the terminal.
+        Defaults to True.
+    output_to_file : bool, optional
+        Whether to write log output to a file.
+        Defaults to False.
     """
 
     def __init__(self, obsid, 
@@ -2763,82 +3067,94 @@ class PPSFiles(FileMain):
         return
 
     def download_PPS_data(self,
-                          repo      = None,
-                          data_dir  = None,
-                          overwrite = False,
-                          proprietary      = False,
-                          credentials_file = None,
-                          encryption_key   = None,
-                          PPS_subset   = False,
-                          instname     = None,
-                          expflag      = None,
-                          expno        = None,
-                          product_type = None,
-                          datasubsetno = None,
-                          sourceno     = None,
-                          extension    = None,
-                          filename     = None,
-                          **kwargs):
+                          repo: str = None,
+                          data_dir: str | Path  = None,
+                          overwrite: bool = False,
+                          proprietary: bool = False,
+                          credentials_file: str = None,
+                          encryption_key: str = None,
+                          PPS_subset: bool = False,
+                          instname: str = None,
+                          expflag: str = None,
+                          expno: str = None,
+                          product_type: str = None,
+                          datasubsetno: str = None,
+                          sourceno: str = None,
+                          extension: str = None,
+                          filename: str = None,
+                          **kwargs
+                         ):
         """
         This handles preliminary setup for downloading data files, then 
         calls download_data (as "dl_data") from sasutils.
 
-        Inputs:
-            --REQUIRED--
+        If only a subset of PPS files is needed (i.e. not every thing) then set
+        PPS_subset to True. The remaining inputs are used for downloading groups 
+        of PPS files using a particular file pattern. Using these requires an 
+        understanding of PPS filenames.
 
-                NONE
-
-            --OPTIONAL--
-
-            --repo:           (string): Which repository to use to download data. 
-                                        Default: 'esa'
-                                        Can be either
-                                        'esa' (data from Europe/ESA) or 
-                                        'heasarc' (data from North America/NASA) or
-                                        'aws' (data from AWS s3 bucket (NASA)) or
-                                        'fornax' (if user is on Fornax)
-
-            --data_dir:  (string/path): Path to directory where the data will be 
-                                        downloaded. Automatically creates directory
-                                        data_dir/odfid.
-                                        Default: Default from sas_config file, or
-                                        current working directory.
-
-            --overwrite:     (boolean): If True will force overwrite of data if odfid 
-                                        data already exists in data_dir/odfid.
-
-            --proprietary    (boolean): Flag for downloading proprietary data from
-                                        the XSA at ESA.
-
-            --credentials_file (filename): Path and filename of file containing XSA
-                                        username and password. For proprietary data
-                                        only. (Optinal, astroquery will ask user 
-                                        for username and password if filename
-                                        not given.)
-
-            --encryption_key: (string): Encryption key for proprietary data, a string 32 
-                                        characters long. -OR- path to file containing 
-                                        ONLY the encryption key.
-                                        Note: ONLY used for data from the HEASARC.
-
-            --PPS_subset:    (boolean): Set PPS_subset=True if downloading a subset of PPS
-                                        files form the XMM-Newton archive.
-
-            --filename:       (string): If the exact PPS file name is known, then this can
-                                        be used to download a single PPS file.
-
-            
-            The remaining inputs are used for downloading groups of PPS files using a 
-            particular file pattern. Using these requires an understanding of PPS 
-            filenames.
-            
-                instname    : instrument name
-                expflag     : Exposure flag
-                expno       : Exposure number
-                product_type: Product type
-                datasubsetno: data subset number/character
-                sourceno    : Source number or slew step number
-                extension   : File format
+        Parameters
+        ----------
+        repo : str, optional
+            Which repository to use to download data. Accepted values are, 
+            'ESA' (data from the XSA), 
+            'NASA' (data from the HEASARC), 
+            'AWS' (data from AWS s3 bucket (NASA)), 
+            'Fornax' (if user is on Fornax),
+            'SciServer' (if user is on SciServer).
+            Defaults to 'ESA' ('XSA') or set by sas_config file.
+        data_dir : str | Path, optional
+            Path to directory where the data will be downloaded. Automatically 
+            creates directory 'data_dir/obsid'. 
+            Default from sas_config file, or current working directory.
+        overwrite : bool, optional
+            If True will force overwrite of data if obsid data already exists 
+            in 'data_dir/obsid'. 
+            Defaults to False.
+        proprietary : bool, optional
+            Flag for downloading proprietary data from the XSA at ESA. 
+            Defaults to False.
+        credentials_file : str, optional
+            Path and filename of file containing XSA username and password. For 
+            proprietary data only. (If not given then astroquery will ask user 
+            for username and password.) 
+            Defaults to None.
+        encryption_key : str, optional
+            Encryption key for proprietary data, a string 32 characters long. 
+            -OR- path to file containing ONLY the encryption key. Note: ONLY 
+            used for data from the HEASARC. 
+            Defaults to None.
+        PPS_subset : bool, optional
+            Set PPS_subset=True if downloading a subset of PPS.
+            Defaults to False.
+        instname : str, optional
+            Instrument name.
+            Defaults to None.
+        expflag : str, optional
+            Exposure flag.
+            Defaults to None.
+        expno : int or str, optional
+            Exposure number.
+            Defaults to None.
+        product_type : str, optional
+            PPS product type.
+            Defaults to None.
+        datasubsetno : str, optional
+            Data subset number/character.
+            Defaults to None.
+        sourceno : int or str, optional
+            Source number or slew step number.
+            Defaults to None.
+        extension : str, optional
+            File format/extension.
+            Defaults to None.
+        filename : str, optional
+            If the exact PPS file name is known, then this can be used to 
+            download a single PPS file.
+            Defaults to None.
+        **kwargs
+            Additional keyword arguments passed through to underlying download 
+            handler (Astroquery).
         """
 
         # This is a pass-thorugh function for _download_PPS_data.
@@ -2864,21 +3180,26 @@ class PPSFiles(FileMain):
         # in the ObsID class. This parses the downloaded files and sets key filenames.
         self.parse_PPS_dir()
     
-    def return_file_list_on_pattern(self, pattern, list_of_files=None):
+    def return_file_list_on_pattern(self, 
+                                    pattern: str, 
+                                    list_of_files: list | None = None):
         """
-        Returns a list of PPS filenames based on the 
-        regular expression pattern passed in.
+        Returns a list of PPS filenames based on the regular expression pattern 
+        passed in.
 
-        Required Input:
-            - pattern (str): A string with a regular expression (re) pattern.
-                             The pattern must use proper 're' operators for the
-                             're' python package.
+        Parameters
+        ----------
+        pattern : str
+            A string with a regular expression (re) pattern. The pattern must 
+            use proper 're' operators for the 're' python package.
+        list_of_files : list | None, optional
+            A list of filenames to search, by default will use 
+            self.files['PPS'].
 
-                             See: https://docs.python.org/3/library/re.html
-        
-        Optional Input:
-            - list_of_files: A list of filenames to search. If not given, then 
-                             will use self.files['PPS'].
+        Returns
+        -------
+        list
+            List of files matching the pattern passed in.
         """
 
         self.logger.debug(f'Searching PPS files for pattern: {pattern}')
@@ -2898,9 +3219,10 @@ class PPSFiles(FileMain):
     
     def run_cifbuild(self):
         """
-        Runs 'cifbuild' for this Obs ID. Must have --at least one-- 
-        PPS FITS file in the PPS directory.
+        Runs 'cifbuild' for this Obs ID. Must have --at least one-- PPS FITS 
+        file in the PPS directory to get the observation date from the header.
         """
+
         self.logger.debug('Entering run_cifbuild.')
 
         obs_date = None
@@ -2937,10 +3259,8 @@ class PPSFiles(FileMain):
 
     def get_main_summary_filename(self):
         """
-        Returns the filename of the main summary (HTML) file.
-
-        Checks if it has been downloaded, and if not it will 
-        download the file.
+        Returns the filename of the main summary (HTML) file. Checks if it has 
+        been downloaded, and if not it will download the file.
         """
 
         summary_filename = self.return_file_list_on_pattern(self._file_patterns['main_summary'])
@@ -2953,7 +3273,9 @@ class PPSFiles(FileMain):
 
         return summary_filename
     
-    def return_filenames_from_product_dict(self,pattern_dict, list_of_files=None):
+    def return_filenames_from_product_dict(self,
+                                           pattern_dict: dict, 
+                                           list_of_files: list | None = None):
         """
         Returns a list of PPS filenames based on a filename pattern dictionary.
 
@@ -2964,7 +3286,21 @@ class PPSFiles(FileMain):
             'Format' : File format or extension (FFF)
 
             POOOOOOOOOODDUEEETTTTTTSXXX.FFF
+
+        Parameters
+        ----------
+        pattern_dict : dict
+            PPS product type pattern dictionary.
+        list_of_files : list | None, optional
+            List of files to search, by default will use self.files['PPS'].
+
+        Returns
+        -------
+        list
+            List of PPS files matching the product type pattern dictionary.
         """
+        
+        
 
         source  = pattern_dict['Source']
         product = pattern_dict['Product']
@@ -2980,6 +3316,11 @@ class PPSFiles(FileMain):
         """
         This returns a list of all possible PPS filenames, regardless of
         whether or not the PPS files have already been downloaded.
+
+        Returns
+        -------
+        list
+            List of all PPS files for the Obs ID.
         """
 
         cwd = os.getcwd()
