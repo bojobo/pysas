@@ -36,34 +36,36 @@ import os, subprocess
 
 # Function to initialize SAS
 
-def add_environ_variable(variable,invalue,prepend=True):
-        """
-        variable (str) is the name of the environment variable to be set.
-        
-        value (str, or list) is the value to which the environment variable
-        will be set.
-        
-        prepend (boolean) default=True, whether to prepend or append the 
-        variable
-        
-        The function first checks if the enviroment variable already exists.
-        If not it will be created and set to value.
-        If variable alread exists the function will check if value is already
-        present. If not it will add it either prepending (default) or appending.
+def add_environ_variable(variable: str,
+                         invalue: str | list,
+                         prepend: bool=True):
+    """
+    The function first checks if the enviroment variable already exists. If not 
+    it will be created and set to value. If variable alread exists the function 
+    will check if value is already present. If not it will add it either 
+    prepending (default) or appending.
 
-        Returns
-        -------
-        None.
+    Parameters
+    ----------
+    variable : str
+        The name of the environment variable to be set.
+    invalue : str | list
+        The value to which the environment variable will be set.
+    prepend : bool, optional
+        whether to prepend or append the variable, by default True (prepend).
 
-        """
-        
+    Raises
+    ------
+    TypeError
+        Input value must be str or list.
+    """
         if isinstance(invalue, str):
             listvalue = [invalue]
         else:
             listvalue = invalue
             
         if not isinstance(listvalue, list):
-            raise Exception('Input to add_environ_variable must be str or list!')
+            raise TypeError('Input value must be str or list.')
         
         for value in listvalue:
             environ_var = os.environ.get(variable)
@@ -80,20 +82,20 @@ def add_environ_variable(variable,invalue,prepend=True):
                         splitpath.append(value)
                     os.environ[variable] = os.pathsep.join(splitpath)
 
-def overwrite_environ_variable(variable,invalue):
+def overwrite_environ_variable(variable: str,
+                               invalue: str | list):
     """
-        variable (str) is the name of the environment variable to be set.
-        
-        value (str, or list) is the value to which the environment variable
-        will be set.
+    Will overwrite an environment variable to a new value. Will not check if 
+    variable exists or if it is defined.
 
-        Will overwrite an environment variable to a new value. Will not check
-        if variable exists or if it is defined.
-
-        Returns
-        -------
-        None.
+    Parameters
+    ----------
+    variable : str
+        The name of the environment variable to be set.
+    invalue : str | list
+        The value to which the environment variable will be set.
     """
+
     if isinstance(invalue, str):
         listvalue = [invalue]
     else:
@@ -104,23 +106,42 @@ def overwrite_environ_variable(variable,invalue):
     
     os.environ[variable] = os.pathsep.join(listvalue)
 
-def initializesas(sas_dir, sas_ccfpath, verbosity = 4, suppress_warning = 1, image_viewer = 'ds9'):
+def initializesas(sas_dir: str | Path, 
+                  sas_ccfpath: str | Path , 
+                  verbosity: int = 4, 
+                  suppress_warning: int = 1, 
+                  image_viewer: str = 'ds9'):
     """
-    Heasoft must be initialized first, separately.
+    Initializes SAS. Heasoft must be initialized first, separately.
 
-    Inputs are:
+    Parameters
+    ----------
+    sas_dir : str | Path
+        Directory where SAS is installed.
+    sas_ccfpath : str | Path
+        Directory where calibration files are located.
+    verbosity : int, optional
+        SAS verbosity, by default 4.
+    suppress_warning : int, optional
+        SAS suppress warning, by default 1.
+    image_viewer : str, optional
+        SAS image viewer, by default 'ds9'.
 
-        - sas_dir (required) directory where SAS is installed.
+    Returns
+    -------
+    str
+        Information about SAS envirment veriables that were set.
 
-        - sas_ccfpath (required) directory where calibration files are located.
-
-        - verbosity (optional, default = 4) SAS verbosity.
-
-        - suppress_warning (optional, default = 1) 
-
-    Returns:
-    --------
-    Information about SAS envirment veriables that were set.
+    Raises
+    ------
+    EnvironmentError
+        LHEASOFT is not set. Please initialise HEASOFT.
+    Exception
+        HEASOFT is not initialized. Please initialise HEASOFT.
+    NotADirectoryError
+        sas_dir must be provided to initialize SAS.
+    NotADirectoryError
+        sas_ccfpath must be provided to initialize SAS.
     """
 
     ######
@@ -128,9 +149,11 @@ def initializesas(sas_dir, sas_ccfpath, verbosity = 4, suppress_warning = 1, ima
 
     lheasoft = os.environ.get('LHEASOFT')
     if not lheasoft:
-        raise Exception('LHEASOFT is not set. Please initialise HEASOFT')
+        raise EnvironmentError('LHEASOFT is not set. Please initialise HEASOFT.')
 
     # Necessary to fix a problem with calls to heasoft from certain SAS functions.
+    # Note (RT 5/28/2026): This is taken care of on a case by case basis in the
+    # tutorial notebooks. It fixes a problem on Fornax, SciServer, and Datalabs.
     # add_environ_variable('HEADASNOQUERY','')
     # add_environ_variable('HEADASPROMPT','/dev/null')
 
@@ -138,14 +161,14 @@ def initializesas(sas_dir, sas_ccfpath, verbosity = 4, suppress_warning = 1, ima
     try:
         heasoft_test = subprocess.run(["fversion"],stdout = subprocess.DEVNULL)
     except FileNotFoundError:
-        raise Exception('HEASOFT is not initialized. Please initialise HEASOFT')
+        raise Exception('HEASOFT is not initialized. Please initialise HEASOFT.')
 
     # Will not check the configuration file. Configuration file checking must happen 
     # in the calling script or function. sas_dir and sas_ccfpath must be passed in.
     if sas_dir is None:
-        raise Exception('sas_dir must be provided to initialize SAS.')
+        raise NotADirectoryError('sas_dir must be provided to initialize SAS.')
     if sas_ccfpath is None:
-        raise Exception('sas_ccfpath must be provided to initialize SAS.')
+        raise NotADirectoryError('sas_ccfpath must be provided to initialize SAS.')
 
     # Hard overwrite. To set or reset values.
     overwrite_environ_variable('SAS_DIR',sas_dir)

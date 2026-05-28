@@ -20,7 +20,23 @@
 
 # config_pysas.py
 
-"""
+# Standard library imports
+import os, glob
+
+# Third party imports
+
+# Local application imports
+from pysas import sas_cfg
+from pysas.init_sas import initializesas
+from pysas.sasutils import update_calibration_files
+
+__version__ = 'config_pysas (config_pysas-1.1)'
+
+verbosity        = sas_cfg.get_setting('verbosity')
+suppress_warning = sas_cfg.get_setting('suppress_warning')
+
+def run_config():
+    """
     The purpose of this script is so that the user can set the pySAS
     defaults 
     
@@ -52,24 +68,7 @@
 
         from pysas import sas_cfg
         sas_cfg.reset_to_defaults()
-"""
-
-# Standard library imports
-import os, glob
-
-# Third party imports
-
-# Local application imports
-from pysas import sas_cfg
-from pysas.init_sas import initializesas
-from pysas.sasutils import update_calibration_files
-
-__version__ = 'config_pysas (config_pysas-1.1)'
-
-verbosity        = sas_cfg.get_setting('verbosity')
-suppress_warning = sas_cfg.get_setting('suppress_warning')
-
-def run_config():
+    """
 
     outcomment = """
 
