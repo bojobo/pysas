@@ -56,10 +56,35 @@ from pysas import sas_cfg
 
 class ParseArgs:
     """
-    For pySAS v2.0 it is now assumed that the input arguments are
-    passed in as a dictionary.
+    Class for parsing the input arguments. For pySAS v2.0 it is now assumed that 
+    the input arguments are passed in as a dictionary.
+
+    Raises
+    ------
+    EnvironmentError
+        SAS_PATH is undefined.
     """
-    def __init__(self, taskname, argdict, logger = None):
+    
+    def __init__(self, taskname: str, 
+                 argdict: dict, 
+                 logger: logger = None):
+        """
+        Class constructor for ParseArgs.
+
+        Parameters
+        ----------
+        taskname : str
+            The name of the SAS task.
+        argdict : dict
+            Input argument dictionary.
+        logger : logger, optional
+            Logger object, by default None.
+
+        Raises
+        ------
+        EnvironmentError
+            SAS_PATH is undefined.
+        """
         self.taskname = taskname
         self.argdict = argdict
         if logger is None:
@@ -72,7 +97,7 @@ class ParseArgs:
         # Before any further processing check that SAS_PATH is defined
         sas_path = os.environ.get('SAS_PATH')
         if not sas_path:
-            raise Exception('SAS_PATH is undefined. SAS not initialised?')
+            raise EnvironmentError('SAS_PATH is undefined.')
 
         pysaspkgs = []
 
@@ -92,10 +117,43 @@ class ParseArgs:
             cmd = self.taskname + ' -v'
             self.version = subprocess.check_output(cmd, shell=True, text=True)
 
+    def __repr__(self):
+        """
+        Class representation.
+
+        Returns
+        -------
+        str
+            Class representation.
+        """
+        return f'{self.__class__.__name__}({self.taskname} - {self.argdict})'
+
     # This is the task parser constructor
     def optparser(self):
         """
-        This parses the 'options' from the input.
+        This parses the 'options' from the input. The parsed options are stored 
+        in a dict called parsedargs.
+        There are two groups of options:
+        a) Immediate action:
+            If the option is present, it must be processed immediately and exit.
+            These are: 
+                -v/--version, 
+                -d/--dialog, 
+                -m/--manpage, 
+                -h/--help, 
+                -p/--param.
+        b) Modifiers:
+            If the option is present, it modifies the execution of the command 
+            and/or the environment, usually by setting an environment variable.
+            These are: 
+            -V/--verbosity (SAS_VERBOSITY), 
+            -c/--noclobber (SAS_CLOBBER), 
+            -a/--ccfpath (SAS_CCFPATH),
+            -i/--ccf (SAS_CCF), 
+            -o/--odf (SAS_ODF), 
+            -f/--ccffiles,
+            -w/--warning, 
+            -t/--trace.
         """
 
         # Define the parser. No need to make it class wide.
@@ -196,11 +254,9 @@ class ParseArgs:
     # If these options are present, will execute a command and return Exit
     def exe_options(self):
         """
-        Method to execute options or parameters that 
-        require immediate action.
+        Method to execute options or parameters that require immediate action.
 
-        These include options that execute the command 
-        and exit. These are: 
+        These include options that execute the command and exit. These are: 
 
             version(--version, -v)
             help(--help, -h)
@@ -208,9 +264,8 @@ class ParseArgs:
             dialog(--dialog, -d)
             manpage(--manpage, -m)
 
-        Returns 'Exit' which if True will send the exit 
-        command up the chain. If False, then pySAS will 
-        continue to execute.
+        Returns 'Exit' which if True will send the exit command up the chain. 
+        If False, then pySAS will continue to execute.
 
         # Process options entered in command line
         #
@@ -228,8 +283,12 @@ class ParseArgs:
         # -m/--manpage  => sashelp to show HTML doc in the default web browser
         #
 
+        Returns
+        -------
+        bool
+            Whether to exit.
         """
-
+        
         # Exit is set to False
         Exit = False
 
@@ -296,22 +355,27 @@ class ParseArgs:
         Method to collect options that set environment variables 
         and then continue running the SAS task. These are:
 
-               -V/--verbosity (SAS_VERBOSITY)
-               -c/--noclobber (SAS_CLOBBER)
-               -a/--ccfpath (SAS_CCFPATH)
-               -i/--ccf (SAS_CCF)
-               -o/--odf (SAS_ODF)
-               -f/--ccffiles
-               -w/--warning
-               -t/--trace
+            -V/--verbosity (SAS_VERBOSITY)
+            -c/--noclobber (SAS_CLOBBER)
+            -a/--ccfpath (SAS_CCFPATH)
+            -i/--ccf (SAS_CCF)
+            -o/--odf (SAS_ODF)
+            -f/--ccffiles
+            -w/--warning
+            -t/--trace
+
+        Returns
+        -------
+        dict
+            return_options, a dictionary to hold set options.
         """
+        
         # return_options is a dictionary to hold set options
         return_options = {}
         env_options_list = []
 
-        # The options are accumulative, if they are 
-        # present they are collected into a list and
-        # returned to MyTask. 
+        # The options are accumulative, if they are present they are collected 
+        # into a list and returned to MyTask. 
 
         # sas_ccfpath
         if self.parsedargs.sas_ccfpath:
@@ -367,14 +431,21 @@ class ParseArgs:
 
         return return_options
 
-    def __repr__(self):
-        return f'{self.__class__.__name__}({self.taskname} - {self.argdict})'
-
     def runext(self, runcmd):
+        """
+        Run options that need to be executed.
+
+        Parameters
+        ----------
+        runcmd : str
+            Run command
+        """
         self.runcmd = runcmd
         if self.runcmd == None:
             return
-        with subprocess.Popen(self.runcmd, bufsize=1, shell=False, text=True, stdout=subprocess.PIPE,stderr=subprocess.STDOUT, universal_newlines=True) as p:
+        with subprocess.Popen(self.runcmd, bufsize=1, shell=False, text=True, 
+                              stdout=subprocess.PIPE,stderr=subprocess.STDOUT, 
+                              universal_newlines=True) as p:
             for line in p.stdout:
                 print(line, end='')
         #if p.returncode != 0:
