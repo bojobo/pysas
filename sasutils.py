@@ -40,90 +40,115 @@ from .logger import TaskLogger as TL
 from pysas import sas_cfg
 
 
-def download_data(obsid,
-                  data_dir,
-                  level     = 'ODF',
-                  repo      = 'esa',
-                  overwrite = True,
-                  logger    = None,
-                  encryption_key   = None,
-                  proprietary      = False,
-                  credentials_file = None,
-                  PPS_subset   = False,
-                  instname     = None,
-                  expflag      = None,
-                  expno        = None,
-                  product_type = None,
-                  datasubsetno = None,
-                  sourceno     = None,
-                  extension    = None,
-                  filename     = None,
+def download_data(obsid: str,
+                  data_dir: str,
+                  level: str = 'ODF',
+                  repo: str  = 'esa',
+                  overwrite: bool = True,
+                  logger: logger  = None,
+                  encryption_key: str   = None,
+                  proprietary: bool     = False,
+                  credentials_file: str = None,
+                  PPS_subset: bool  = False,
+                  instname: str     = None,
+                  expflag: str      = None,
+                  expno: str        = None,
+                  product_type: str = None,
+                  datasubsetno: str = None,
+                  sourceno: str     = None,
+                  extension: str    = None,
+                  filename: str     = None,
                   **kwargs):
     """
-    --Not intended to be used by the end user. Internal use only.--
-    --Use obsid.download_ODF_data() or obsid.download_ALL_data() instead.--
+    Not intended to be used by the end user. Internal use only. Use 
+    obsid.download_ODF_data() or obsid.download_ALL_data() instead.
 
     Downloads, or copies, data from chosen repository. 
 
-    !!!! WARNING !!!!
     Will silently overwrite any preexisting data files and remove any existing
     pipeline products. Will create directory structure in 'data_dir' for odf.
 
     Only the download_data functions in ObsID will check for preexisting files.
 
-    Inputs:
+    Parameters
+    ----------
+    obsid : str
+        Obs ID in string format.
+    data_dir : str
+        Path to directory where the data will be downloaded. Automatically 
+        creates directory data_dir/obsid. data_dir MUST exist.
+    level : str, optional
+        Level of data products to download. Allowed values are 'ODF', 'PPS', or
+        'ALL', by default 'ODF'.
+    repo : str, optional
+        Which repository to use to download data. Not case sensitive. 
+        Allowed values are 'esa','xsa','heasarc','nasa','sciserver','fornax', 
+        or 'aws', by default 'esa'.
+    overwrite : bool, optional
+        Will only check if obs_dir exists, by default True.
+    logger : logger, optional
+        logger object, by default None
+    encryption_key : str, optional
+        Encryption key for proprietary data, a string 32 characters long. 
+        -OR- path to file containing ONLY the encryption key, by default None.
+    proprietary : bool, optional
+        Flag for downloading proprietary data from the XSA at ESA, 
+        by default False.
+    credentials_file : str, optional
+        Path and filename of file containing XSA username and password. For 
+        proprietary data only. (If not given then astroquery will ask user 
+        for username and password.) 
+        Defaults to None.
+    PPS_subset : bool, optional
+        Set PPS_subset=True if downloading a subset of PPS.
+        Defaults to False.
+    instname : str, optional
+        Instrument name.
+        Defaults to None.
+    expflag : str, optional
+        Exposure flag.
+        Defaults to None.
+    expno : int or str, optional
+        Exposure number.
+        Defaults to None.
+    product_type : str, optional
+        PPS product type.
+        Defaults to None.
+    datasubsetno : str, optional
+        Data subset number/character.
+        Defaults to None.
+    sourceno : int or str, optional
+        Source number or slew step number.
+        Defaults to None.
+    extension : str, optional
+        File format/extension.
+        Defaults to None.
+    filename : str, optional
+        If the exact PPS file name is known (no wildcards), then this can be 
+        used to download a single PPS file.
+        Defaults to None.
+    **kwargs
+        Additional keyword arguments passed through to underlying download 
+        handler (Astroquery).
 
-        --obsid:          (string): ID of ODF in string format.
-
-        --data_dir:  (string/path): Path to directory where the data will be 
-                                    downloaded. Automatically creates directory
-                                    data_dir/obsid.
-                                    Default: --REQUIRED-- MUST EXIST!.
-
-        --level:          (string): Level of data products to download.
-                                    Default: 'ODF'
-                                    Can be 'ODF, 'PPS' or 'ALL'.
-
-        --repo:           (string): Which repository to use to download data. 
-                                    Default: 'esa'
-                                    Can be either
-                                        'esa' (data from Europe/ESA) or 
-                                        'heasarc' (data from North America/NASA) or
-                                        'sciserver' (if user is on sciserver)
-
-        --logger      (TaskLogger): Task logger object.
-
-        --encryption_key: (string): Encryption key for proprietary data, a string 32 
-                                    characters long. -OR- path to file containing 
-                                    ONLY the encryption key.
-
-        --proprietary    (boolean): Flag for downloading proprietary data from
-                                    the XSA at ESA.
-
-        --credentials_file (filename): Path and filename of file containing XSA
-                                       username and password. For proprietary data
-                                       only. (Optinal, astroquery will ask user 
-                                       for username and password if filename
-                                       not given.)
-
-        --overwrite:     (boolean): If True will force overwrite of data if obsid 
-                                        data already exists in data_dir/obsid.
-
-        The remaining inputs are used for downloading groups of PPS files using a 
-        particular file pattern. Using these requires an understanding of PPS 
-        filenames.
-            
-            instname: instrument name
-            expflag: Exposure flag
-            expno: Exposure number
-            product_type: Product type
-            datasubsetno: data subset number/character
-            sourceno: Source number or slew step number
-            extension: File format
-
-            filename: Filename with no wildcards
-
-        
+    Raises
+    ------
+    Exception
+        File {odftar} extension not recognized.
+    Exception
+        tar file extraction failed.
+    Exception
+        Obs ID {obsid} not found in the XMM archive!
+    Exception
+        File download failed!
+    Exception
+        Multiple possible encryption key files.
+    Exception
+        File decryption failed. No encryption file found.
+    Exception
+        File decryption failed. No encryption key found.
+    Exception
+        File decryption failed.
     """
 
     if not logger:
@@ -273,8 +298,8 @@ def download_data(obsid,
                         logger.info(f'{odftar} extracted successfully!')
                         logger.info(f'{odftar} removed')
                     except tarfile.ExtractError:
-                        logger.error('tar file extraction failed')
-                        raise Exception('tar file extraction failed')
+                        logger.error('tar file extraction failed.')
+                        raise Exception('tar file extraction failed.')
         case 'heasarc' | 'nasa' | 'sciserver' | 'fornax' | 'aws':
             download_location = obs_dir
             on_host = '...'
@@ -494,7 +519,7 @@ def download_data(obsid,
                 if result.returncode != 0:
                     logger.error(f'Problem decrypting {file}')
                     logger.error(f'File decryption failed, key used {encryption_key}')
-                    raise Exception('File decryption failed')
+                    raise Exception('File decryption failed.')
                 os.remove(file)
                 logger.info(f'{file} removed')
     else:
@@ -542,12 +567,24 @@ def download_data(obsid,
 
     return
 
-def generate_logger(logname=None,log_dir=None):
+def generate_logger(logname: str = 'general_sas',
+                    log_dir: str = None):
     """
-    --Not intended to be used by the end user. Internal use only.--
+    Function to generate a Task Logger. Note: For the _old_ task logger.
+
+    Parameters
+    ----------
+    logname : str, optional
+        Filename for log file, by default general_sas.
+    log_dir : str, optional
+        Directory for the log file, by default current directory or environment 
+        variable 'SAS_TASKLOGDIR'.
+
+    Returns
+    -------
+    logger
+        File logger object.
     """
-    if not logname:
-        logname = 'general_sas'
 
     sastasklogdir = os.environ.get('SAS_TASKLOGDIR')
 
@@ -575,6 +612,22 @@ def generate_logger(logname=None,log_dir=None):
 def update_calibration_files(repo='NASA'):
     """
     Function to download/update XMM calibration files.
+
+    Parameters
+    ----------
+    repo : str, optional
+        Download repository. Allowed options are 'NASA' and 'ESA'. Not case 
+        sensitive. By default 'NASA'.
+
+    Returns
+    -------
+    result
+        Subprocess return.
+
+    Raises
+    ------
+    Exception
+        SAS_CCFPATH not set.
     """
 
     sas_ccfpath = os.environ.get('SAS_CCFPATH')
@@ -602,6 +655,23 @@ def install_sas(repo='NASA',sas_version='21.0.0'):
     !!WARNING!! EXPERIMENTAL!
     No guarentees this will work.
     Only tested with Ubuntu v. 20 and 22
+
+    Parameters
+    ----------
+    repo : str, optional
+        Download repository. Allowed options are 'NASA' and 'ESA'. Case 
+        sensitive. By default 'NASA'.
+    sas_version : str, optional
+        SAS version to download. By default '21.0.0'.
+
+    Raises
+    ------
+    Exception
+        Repository '{repo}' not recognized.
+    Exception
+        Ubuntu version {version} not recognized.
+    Exception
+        Linux distribution {distribution} not supported.
     """
 
     tar_file = f'sas_{sas_version}-'
@@ -645,10 +715,14 @@ def install_sas(repo='NASA',sas_version='21.0.0'):
         else:
             raise Exception(f"Linux distribution {distribution} not supported.")
 
-def generate_PPS_pattern(obsid=None,instname=None,
-                          expflag=None,expno=None,
-                          product_type=None,datasubsetno=None,
-                          sourceno=None,extension=None):
+def generate_PPS_pattern(obsid: str = None,
+                         instname: str = None, 
+                         expflag: str = None,
+                         expno: str = None,
+                         product_type: str = None,
+                         datasubsetno: str = None,
+                         sourceno: str = None,
+                         extension: str = None):
     """
     Function for generating a filename for downloading PPS files.
 
@@ -674,14 +748,38 @@ def generate_PPS_pattern(obsid=None,instname=None,
                 (1 character, differentiates energy bands,
                 OSWs, filters, orders etc.)
 
-    XXX         (sourceno) Source number or slew step number (3 characters, hexadecimal).
-                It is set to 000 in source products from EPIC-pn Timing mode.
+    XXX         (sourceno) Source number or slew step number (3 characters, 
+                hexadecimal). It is set to 000 in source products from EPIC-pn 
+                Timing mode.
 
     FFF         (extension) File format (3 characters)
 
     If inputs are not given then a wildcard "*" character will 
     be inserted.
 
+    Parameters
+    ----------
+    obsid : str, optional
+        Obs ID, by default None.
+    instname : str, optional
+        Data source identifier (instrument name), by default None.
+    expflag : str, optional
+        Exposure flag, by default None.
+    expno : str, optional
+        Exposure number, by default None.
+    product_type : str, optional
+        Product type, by default None.
+    datasubsetno : str, optional
+        Data subset number/character, by default None.
+    sourceno : str, optional
+        Source number or slew step number, by default None.
+    extension : str, optional
+        File format, by default None.
+
+    Returns
+    -------
+    str
+        PPS filename pattern with wildcards.
     """
 
     if not obsid: obsid = '*'
@@ -693,7 +791,6 @@ def generate_PPS_pattern(obsid=None,instname=None,
     if not sourceno: sourceno = '*'
     if not extension: extension = '*'
 
-
     filename = f'P{obsid}{instname}{expflag}{expno}{product_type}{datasubsetno}{sourceno}.{extension}'
 
     # Remove multiple "*"
@@ -704,14 +801,18 @@ def generate_PPS_pattern(obsid=None,instname=None,
 def load_json_from_package(filename: str):
     """
     Load a JSON file from a given package using importlib.resources.files().
-    
-    Args:
-        package (str): The package path (e.g., 'my_package.data').
-        filename (str): The JSON file name inside the package.
-    
-    Returns:
-        dict: Parsed JSON data.
+
+    Parameters
+    ----------
+    filename : str
+        The JSON file name inside the package.
+
+    Returns
+    -------
+    dict
+        Parsed JSON data.
     """
+    
     try:
         # Locate the file inside the package
         file_path = resources.files("pysas") / filename
