@@ -108,54 +108,90 @@ class MyTask:
     The SASTask class replaces the Wrapper class from
     wrapper.py.
 
-    Inputs:
-    (required)
-        - taskname   : Name of the task to be run.
-        - inargs     : Input arguments.
-    (optional)
-        - logfilename: Designated log file name. Will be used instead
-                        of "{taskname}.log". Useful for putting all 
-                        output from multiple tasks into the same file.
-        - tasklogdir : (default: cwd) Directory where to write the log 
-                        file.
-                        Priority of defaults for task_logdir
-                        1. tasklogdir (passed in to function)
-                        2. SAS_TASKLOGDIR (envirnment variable)
-                        3. cwd (final default)
-
-        - output_to_terminal : (default: True) Output will be written to 
-                                the terminal.
-        - output_to_file     : (default: False) Output will be written to 
-                                a log file.
-
-
     For pySAS v2.0 the inargs has switched to fundamentally being a dictionary.
     If a list is passed in it will be converted into a dictionary.
                                 
-    In the class initialization, the task name and
-    the input args to run it are processed. 
-    Task parameters as identified by the '=' sign are 
-    separated of task options, to reorder them to 
-    avoid conflicts at the time of parsing them.
+    In the class initialization, the task name and the input args to run it are 
+    processed. Task parameters as identified by the '=' sign are separated of 
+    task options, to reorder them to avoid conflicts at the time of parsing 
+    them.
 
-    The instance method 'readparfile' gets a full
-    picture of the task parameter file, receiving
-    a bunch of information abouth subparameters and
-    their relationship with its predecessors.
+    The instance method 'readparfile' gets a full picture of the task parameter 
+    file, receiving a bunch of information abouth subparameters and their 
+    relationship with its predecessors.
 
-    The instance method 'processargs' performs the
-    processing of any immediate options and filter out
-    the legitimate and mandatory parameters so as
-    they can be used in the 'run' instance method.
-    """
+    The instance method 'processargs' performs the processing of any immediate 
+    options and filter out the legitimate and mandatory parameters so as they 
+    can be used in the 'run' instance method.
 
-    def __init__(self, taskname, 
-                 inargs = {}, 
-                 logfilename = None, 
-                 tasklogdir  = None,
-                 output_to_terminal = True, 
-                 output_to_file     = False,
-                 logger = None):
+    Parameters
+    ----------
+    taskname : str
+        SAS task name.
+    inargs : dict | list | str, optional
+        SAS input arguments, by default {}.
+    logfilename : str, optional
+        Designated log file name. Useful for putting all output from multiple 
+        tasks into the same file. By default "{taskname}.log".
+    tasklogdir : str, optional
+        Output directory for the log file, by default None.
+        Priority of defaults for task_logdir
+            1. tasklogdir (passed in)
+            2. SAS_TASKLOGDIR (envirnment variable)
+            3. cwd (final default)
+    output_to_terminal : bool, optional
+        Whether to print output to the terminal, by default True.
+    output_to_file : bool, optional
+        Whether to print output to file, by default False.
+    logger : logger, optional
+        Logger object, by default None.
+
+    Raises
+    ------
+    Exception
+        Parameter '{p}' is not recognized!
+    Exception
+        Missing, at least, mandatory parameter "{p}".
+    Exception
+        If subparameter {p} is used then {parent} must be set to "{cond_par_val}"!
+    Exception
+        Missing mandatory subparameter {child}.
+    EnvironmentError
+        SAS_PATH is undefined!
+    """    
+
+    def __init__(self, taskname: str, 
+                 inargs: dict | list | str = {}, 
+                 logfilename: str = None, 
+                 tasklogdir: str  = None,
+                 output_to_terminal: bool = True, 
+                 output_to_file: bool     = False,
+                 logger: logger = None):
+        """
+        Class constructor for MyTask.
+
+        Parameters
+        ----------
+        taskname : str
+            SAS task name.
+        inargs : dict | list | str, optional
+            SAS input arguments, by default {}.
+        logfilename : str, optional
+            Designated log file name. Useful for putting all output from 
+            multiple tasks into the same file. By default "{taskname}.log".
+        tasklogdir : str, optional
+            Output directory for the log file, by default None.
+            Priority of defaults for task_logdir
+                1. tasklogdir (passed in)
+                2. SAS_TASKLOGDIR (envirnment variable)
+                3. cwd (final default)
+        output_to_terminal : bool, optional
+            Whether to print output to the terminal, by default True.
+        output_to_file : bool, optional
+            Whether to print output to file, by default False.
+        logger : logger, optional
+            Logger object, by default None.
+        """
         self.taskname    = taskname
         self.inargs      = inargs
         self.logfilename = logfilename
@@ -239,8 +275,8 @@ class MyTask:
 
     def readparfile(self):
         """
-        Reads the parameter file (taskname.par) for the task. Returns 
-        various lists and dictionaries.
+        Reads the parameter file (taskname.par) for the task. Adds various lists 
+        and dictionaries to the object.
             - allparams : Dictionary { parameter: {attributes} }
             - mandpar   : List of all mandatory parameters/subparameters
             - mainparams: List of main paramaters
@@ -249,8 +285,8 @@ class MyTask:
                             value=its parent parameter
             - rev_mandpar_dict: Dictionary, keys = parent paramater, 
                                 value = list of all mandatory subparameters
-            - rev_mandpar_string_dict: Dictionary, keys = parent parameter type 'string'
-                                       value = list of alternatives
+            - rev_mandpar_string_dict: Dictionary, keys = parent parameter type 
+                                       'string' value = list of alternatives
         """
         t = paramXmlInfoReader(self.taskname, logger = self.logger)
         t.xmlParser()
@@ -263,6 +299,25 @@ class MyTask:
         self.rev_mandpar_string_dict = t.rev_mandpar_string_dict
 
     def processargs(self):
+        """
+        Processes the input arguments and compares them with the parameter file.
+
+        Returns
+        -------
+        bool
+            Whether to exit without running the task based on the inputs.
+
+        Raises
+        ------
+        Exception
+            Parameter '{p}' is not recognized!
+        Exception
+            Missing, at least, mandatory parameter "{p}".
+        Exception
+            If subparameter {p} is used then {parent} must be set to "{cond_par_val}"!
+        Exception
+            Missing mandatory subparameter {child}.
+        """
         # Only if options are passed in
         if 'option' in self.inargs.keys():
             self.logger.warning("Input arguments include the key 'option'. Use 'options' (with an 's') instead.")
@@ -406,19 +461,34 @@ class MyTask:
         self.iparsdic = {**defaults, **self.argsdic}
 
     def printHelp(self):
+        """
+        Wrapper for paramXmlInfo.printHelp. Prints information on the SAS task.
+        """
         self.paramXmlInfo.printHelp()
     
     def run(self):
         """
-        Method run
+        Runs the SAS task with the inputs.
 
-        If taskname is a Python module, therefore it is in the
-        list pysaspkgs, then import it and pass to its run
-        function the dictionary of parameters, iparsdic
+        If taskname is a Python module, therefore it is in the list pysaspkgs, 
+        then import it and pass to its run function the dictionary of 
+        parameters, iparsdic.
 
-        If taskname is not a Python SAS task, there will not be
-        a run function, so we will invoke subprocess
+        If taskname is not a Python SAS task, there will not be a run function, 
+        so we will invoke subprocess.
+
+        Returns
+        -------
+        bool
+            Whether to exit without running the task based on the inputs.
+
+        Raises
+        ------
+        EnvironmentError
+            SAS_PATH is undefined!
         """
+        
+        
         self.logger.debug(f'Running {self.taskname}')
         self.logger.debug(f'Processing input arguments')
         self.processargs()
@@ -428,7 +498,7 @@ class MyTask:
         sas_path = os.environ.get('SAS_PATH')
 
         if not sas_path:
-            raise Exception('SAS_PATH is undefined! SAS not initialised?')
+            raise EnvironmentError('SAS_PATH is undefined! SAS not initialised?')
 
         pysaspkgs = []
 
@@ -547,8 +617,8 @@ class MyTask:
 
     def runtask(self):
         """
-        This method is here for legacy reasons since some Python
-        based SAS tasks still create a MyTask object.
+        This method is here for legacy reasons since some Python based SAS tasks 
+        still create a MyTask object.
         e.g.
             # Instatntiate MyTask for the task
             t = MyTask('sasver', args)
@@ -561,9 +631,8 @@ class MyTask:
 
 class SASTask(MyTask):
     """
-    Class SASTask is a child of MyTask and has access to all
-    of the methods in MyTask. It's only purpose is to act as
-    a placeholder for legacy code.
+    Class SASTask is a child of MyTask and has access to all of the methods in 
+    MyTask. It's only purpose is to act as a placeholder for legacy code.
     """
     def __init__(self, taskname, inargs):
         super().__init__(taskname,inargs)
