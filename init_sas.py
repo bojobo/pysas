@@ -29,6 +29,7 @@ For auto initializing SAS on import of pySAS.
 
 # Standard library imports
 import os, subprocess
+from pathlib import Path
 
 # Third party imports
 
@@ -59,28 +60,28 @@ def add_environ_variable(variable: str,
     TypeError
         Input value must be str or list.
     """
-        if isinstance(invalue, str):
-            listvalue = [invalue]
-        else:
-            listvalue = invalue
-            
-        if not isinstance(listvalue, list):
-            raise TypeError('Input value must be str or list.')
+    if isinstance(invalue, str):
+        listvalue = [invalue]
+    else:
+        listvalue = invalue
         
-        for value in listvalue:
-            environ_var = os.environ.get(variable)
-            # Create variable if it does not exist.
-            if not environ_var:
-                os.environ[variable] = value
-            else:
-                splitpath = environ_var.split(os.pathsep)
-                # Only add if the new value does not exist in the variable.
-                if not value in splitpath:
-                    if prepend:
-                        splitpath.insert(0,value)
-                    else:
-                        splitpath.append(value)
-                    os.environ[variable] = os.pathsep.join(splitpath)
+    if not isinstance(listvalue, list):
+        raise TypeError('Input value must be str or list.')
+    
+    for value in listvalue:
+        environ_var = os.environ.get(variable)
+        # Create variable if it does not exist.
+        if not environ_var:
+            os.environ[variable] = value
+        else:
+            splitpath = environ_var.split(os.pathsep)
+            # Only add if the new value does not exist in the variable.
+            if not value in splitpath:
+                if prepend:
+                    splitpath.insert(0,value)
+                else:
+                    splitpath.append(value)
+                os.environ[variable] = os.pathsep.join(splitpath)
 
 def overwrite_environ_variable(variable: str,
                                invalue: str | list):

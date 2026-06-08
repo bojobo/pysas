@@ -59,10 +59,8 @@ def get_logger(taskname: str,
         by default "{taskname}.log".
     tasklogdir : str, optional
         Directory where to write the log file. Priority of defaults for 
-        task_logdir
-            1. tasklogdir (passed in to function)
-            2. SAS_TASKLOGDIR (envirnment variable)
-            3. cwd (final default)
+        task_logdir are; tasklogdir (passed in to function), 
+        SAS_TASKLOGDIR (envirnment variable), then cwd (final default).
     pylogger : bool, optional
         True: Use logger settings for Python logging 
         False: Use logger settings for subprocess logging Only set to 'False' 

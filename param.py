@@ -72,14 +72,12 @@ class paramXmlInfoReader:
     Exception
         ERROR opening parameter file.
     Exception
-        _description_
+        rev_pels is undefined.
     Exception
-        _description_
+        pels is undefined.
     """
-    
-    
 
-    def __init__(self, taskname: str, logger: logger = None):
+    def __init__(self, taskname: str, logger = None):
         """taskname to be handled."""
 
         self.taskname = taskname

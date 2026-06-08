@@ -67,7 +67,7 @@ class ParseArgs:
     
     def __init__(self, taskname: str, 
                  argdict: dict, 
-                 logger: logger = None):
+                 logger = None):
         """
         Class constructor for ParseArgs.
 

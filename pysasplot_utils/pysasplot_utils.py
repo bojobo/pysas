@@ -31,7 +31,7 @@ from matplotlib.collections import PatchCollection
 from matplotlib.ticker import StrMethodFormatter
 import xspec
 
-def plot_spectra_model(spectrum: spectrum,
+def plot_spectra_model(spectrum,
                        plot_file_name: str = 'spectra_model_plot.png'):
     """
     Convenient function to plot a spectrum and XSPEC model.
@@ -49,16 +49,6 @@ def plot_spectra_model(spectrum: spectrum,
     fig
         Matplotlib figure object and two axis objects.
     """
-    
-
-    Inputs:
-        spectrum - pyXSPEC Spectrum object created using xspec.Spectrum.
-                   Spectrum object must contain at least one model 
-                   created using xspec.Model.
-        plot_file_name - 
-    
-    Returns:
-        Matplotlib figure object and two axis objects.
     
     xspec.Plot.device='/null'
     xspec.Plot.xAxis = 'keV'
@@ -255,8 +245,8 @@ def text_plot(fits_file: str, extra_text: str = ''):
 
     return text_plot
 
-def ingest_data(fits_file: str | HDUList, 
-                in_data: str | ndarray, 
+def ingest_data(fits_file: str, 
+                in_data: str, 
                 label: str = 'label'):
     """
     Prepares the data from the input in a key-value, ready to plot with the
@@ -357,7 +347,7 @@ def is_iterable(py_obj):
     else:
         return False
 
-def get_time_deltas(fits_file: str | HDUList, 
+def get_time_deltas(fits_file: str, 
                     extension: int = 1, 
                     points: int = 512, 
                     x_data: str = 'TIME', 
@@ -423,7 +413,7 @@ def get_time_deltas(fits_file: str | HDUList,
 
     return DTin, DTout
 
-def TSrebin(tstable: Table | FITS_rec, 
+def TSrebin(tstable, 
             DTin: int, 
             DTout: int, 
             t_xlabel: str = 'TIME', 
@@ -899,7 +889,7 @@ def simple_2d_plot(x_data: dict,
 
     return fig
 
-def ingest_table(table: Table, 
+def ingest_table(table, 
                  points: int | float, 
                  x_label: str, 
                  y_labels: str, 
@@ -1076,7 +1066,7 @@ def check_format_compatibility(out_format: str):
     else:
         return False
 
-def plot_region_box(ax: Axes, 
+def plot_region_box(ax, 
                     x1: float, 
                     y1: float, 
                     width: float, 
@@ -1085,7 +1075,7 @@ def plot_region_box(ax: Axes,
                     fill: bool   = False, 
                     colour: str  = 'green', 
                     text: str    = None, 
-                    transform: transAxes = None):
+                    transform = None):
     """
     Returns an axis object with with a box region printed on it.
 

@@ -166,7 +166,7 @@ class MyTask:
                  tasklogdir: str  = None,
                  output_to_terminal: bool = True, 
                  output_to_file: bool     = False,
-                 logger: logger = None):
+                 logger = None):
         """
         Class constructor for MyTask.
 

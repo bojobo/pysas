@@ -49,110 +49,111 @@ from pysas.pysasplot_utils.pysasplot_utils import quick_light_curve_plot as qlcp
 
 repo_opts = ['esa','xsa','heasarc','nasa','sciserver','fornax','aws']
 
+# Private Methods:
+#         - _set_obsid: Initializes the obs_dir and sets environment 
+#                       variables.
+#         - _download_PPS_data: Downloads PPS files.
+#         - _reset_logger: Resets the logger object.
+#         - _set_data_dir: Detects the data_dir from input or config
+#                          file.
+#         - _check_for_ccf_cif: Checks for the existence of a ccf.cif
+#                          file.
+#         - _check_for_SUM_SAS: Checks for the existence of a *SUM.SAS
+#                          file.
+#         - _check_for_manifest: Checks for the existence of the 
+#                          manifest file.
+#         - _get_list_of_ODF_files: Returns list of files in odf_dir.
+#         - _get_list_of_PPS_files: Returns list of files in pps_dir.
+#         - _get_list_of_work_files: Returns list of files in work_dir.
+#         - _inisas: Can be used to initialize SAS.
+#         - _sas_talk: Can be used to set SAS environment variables.
+#         - _remove_attr: Removes and attribute from the object.
+
 class FileMain:
     """
     Super Class for handling XMM data files.
 
-    Available Methods:
+    Methods
+    -------
+    download_ODF_data(repo=None,data_dir=None,overwrite=False,proprietary=False,credentials_file=None,encryption_key=None)
+        Download ODFs for a single Obs ID.
+    download_ALL_data(repo=None,data_dir=None,overwrite=False,proprietary=False,credentials_file=None,encryption_key=None)
+        Download both ODFs and PPS files for a sinlge Obs ID.
+    run_MyTask(taskname,inargs={},**kwargs)
+        Acts as a wrapper around 'MyTask'. Allows calling SAS tasks using the 
+        same input values set by making an ObsID object.
+    quick_eplot(fits_event_list_file,image_file='image.fits',xcolumn='X',ycolumn='Y',ximagesize='600',yimagesize='600',expression=None,vmin= 1.0,vmax= 10.0,**kwargs)
+        Takes an event list in FITS format and creates a FITS image file and 
+        plots it.
+    quick_implot(image_file,xlabel="RA",ylabel="Dec",title=None,vmin=1.0,vmax=10.0,grid=True,save_file=False,out_fname="image.png")
+        Takes a FITS image file and plots it.
+    quick_lcplot(fits_event_list_file,light_curve_file="light_curve.fits",timebinsize="100",tstart=None,tend=None,title=None,save_file=False,out_fname="light_curve.png",**kwargs) 
+        Takes an event list and creates a light curve and plots it.
+    find_event_list_files(print_output=True)
+        Searches obs_dir for event lists created by the procs or chains.
+    find_rgs_spectra_files(print_output=True)
+        Searches obs_dir for RGS spectra.
+    get_cal_ind()
+        Searches obs_dir for the calibration index file (ccf.cif or CALIND).
+    get_SUM_SAS(user_defined_file=None)
+        Searches obs_dir for the *SUM.SAS file.
+    clear_obs_dir()
+        Deletes the obs_dir. Creates a new empty obs_dir.
+    clear_work_dir()
+        Deletes all files from the work_dir.
+    make_work_dir()
+        Creates both the obs_dir and work_dir.
+    resolve_obs_dir()
+        Parses the obs_dir for different file types. Links the filenames.
+    get_active_instruments()
+        Searchs the *SUM.SAS or Obs summary files for which instruments were active.
+    write_bash_source_script(filename='set_env_variables.sh')
+        Writes a bash file that can be sourced to set environment variables for 
+        the Obs ID. SAS tasks can then be run from the terminal.
 
-        - download_ODF_data: Download ODFs for a single Obs ID.
+    Attributes
+    ----------
+    obsid : str
+        The 10 digit Observation ID.
+    data_dir : str
+        Path to the base data directory.
+    files : dict
+        Dictionary with lists of data files.
+    obs_dir : str
+        Path to the observation data directory, by default 'data_dir/obsid'.
+    odf_dir : str
+        Path to the directory containing the ODF data products, 
+        by default 'obs_dir/ODF'.
+    pps_dir : str
+        Path to the directory containing the PPS data products, 
+        by default 'obs_dir/PPS'.
+    work_dir : str
+        Path to the directory containing the SAS generated data products, 
+        by default 'obs_dir/work'.
 
-        - download_ALL_data: Download both ODFs and PPS files 
-                             for a sinlge Obs ID.
-
-        - run_MyTask: Acts as a wrapper around 'MyTask'. Allows 
-                      calling SAS tasks using the same input values
-                      set by making an ObsID object.
-
-        - quick_eplot: Takes an event list in FITS format and 
-                       creates a FITS image file and plots it.
-
-        - quick_implot: Takes a FITS image file and plots it.
-
-        - quick_lcplot: Takes an event list and creates a light 
-                        curve and plots it.
-
-        - find_event_list_files: Searches obs_dir for event lists 
-                        created by the procs or chains.
-
-        - find_rgs_spectra_files: Searches obs_dir for RGS spectra.
-
-        - get_cal_ind: Searches obs_dir for the calibration index 
-                        file (ccf.cif or *CALIND*).
-
-        - get_SUM_SAS: Searches obs_dir for the *SUM.SAS file.
-
-        - clear_obs_dir: Deletes the obs_dir. Creates a new 
-                         empty obs_dir.
-
-        - clear_work_dir: Deletes all files from the work_dir.
-
-        - make_work_dir: Creates both the obs_dir and work_dir.
-
-        - resolve_obs_dir: Parses the obs_dir for different file
-                           types. Links the filenames.
-
-        - get_active_instruments: Searchs the *SUM.SAS or Obs summary
-                        files for which instruments were active.
-
-        - write_bash_source_script: Writes a bash file that can be 
-                        sourced to set environment variables for 
-                        the Obs ID. SAS tasks can then be run from 
-                        using terminal.
-
-    Private Methods:
-
-        - _set_obsid: Initializes the obs_dir and sets environment 
-                      variables.
-
-        - _download_PPS_data: Downloads PPS files.
-
-        - _reset_logger: Resets the logger object.
-
-        - _set_data_dir: Detects the data_dir from input or config
-                         file.
-
-        - _check_for_ccf_cif: Checks for the existence of a ccf.cif
-                         file.
-
-        - _check_for_SUM_SAS: Checks for the existence of a *SUM.SAS
-                         file.
-
-        - _check_for_manifest: Checks for the existence of the 
-                         manifest file.
-
-        - _get_list_of_ODF_files: Returns list of files in odf_dir.
-
-        - _get_list_of_PPS_files: Returns list of files in pps_dir.
-
-        - _get_list_of_work_files: Returns list of files in work_dir.
-
-        - _inisas: Can be used to initialize SAS.
-
-        - _sas_talk: Can be used to set SAS environment variables.
-
-        - _remove_attr: Removes and attribute from the object.
-
-        Parameters
-        ----------
-        obsid : str or int
-            10 digit number of the Obs ID.
-        data_dir : str, optional
-            Data directory. Defaults to the current directory or set by 
-            sas_config file.
-        logfilename : str, optional
-            Name of log file where all output will be written. Overrides 
-            default log file names. Defaults to either {obsid}.log or 
-            {taskname}.log.
-        tasklogdir : str, optional
-            Directory for log files. Overrides default log directory. Defaults 
-            to work_dir.
-        output_to_terminal : bool, optional
-            Whether to print log output to the terminal.
-            Defaults to True.
-        output_to_file : bool, optional
-            Whether to write log output to a file.
-            Defaults to False.
+    Parameters
+    ----------
+    obsid : str or int
+        The 10 digit Observation ID.
+    data_dir : str, optional
+        Data directory. Defaults to the current directory or set by 
+        sas_config file.
+    
+    Other Parameters
+    ----------
+    logfilename : str, optional
+        Name of log file where all output will be written. Overrides 
+        default log file names. Defaults to either {obsid}.log or 
+        {taskname}.log.
+    tasklogdir : str, optional
+        Directory for log files. Overrides default log directory. Defaults 
+        to work_dir.
+    output_to_terminal : bool, optional
+        Whether to print log output to the terminal.
+        Defaults to True.
+    output_to_file : bool, optional
+        Whether to write log output to a file.
+        Defaults to False.
     """
     def __init__(self, obsid, 
                  data_dir    = None,
@@ -365,7 +366,7 @@ class FileMain:
                           overwrite: bool = False,
                           proprietary: bool = False,
                           credentials_file: str = None,
-                          encryption_key: str = None)::
+                          encryption_key: str = None):
         """
         This handles preliminary setup for downloading data files, then 
         calls download_data (as "dl_data") from sasutils.
@@ -911,7 +912,7 @@ class FileMain:
                     vmin: float | int = 1.0,
                     vmax: float | int = 10.0,
                     **kwargs
-                   ) -> Axes:
+                   ):
         """
         Quick plot function for EPIC event lists. Uses 'evselect' to create a 
         FITS image file. All standard inputs to 'MyTask' can be passed in as 
@@ -1008,7 +1009,7 @@ class FileMain:
                      grid: bool = True,
                      save_file: bool = False,
                      out_fname: str = "image.png"
-                    ) -> Axes:
+                    ):
         """
         Quick plot function for a FITS image file.
 
@@ -1069,7 +1070,7 @@ class FileMain:
                      save_file: bool = False,
                      out_fname: str = "light_curve.png",
                      **kwargs
-                    ) -> Axes:
+                    ):
         """
         Quick plot function to generate a light curve.
 
