@@ -22,15 +22,20 @@ from pysas import VERSION, SAS_RELEASE, SAS_AKA, SAS_COMPILATION_DATE
 from pysas import SAS_COMPILATION_USER, SAS_COMPILATION_HOST, SAS_PLATFORM
 from pysas import SAS_COMMIT_ID
 
-'''
-Shows release and information about the XMM-Newton Science Analysis System (SAS).
-'''
-
 def print_sas_version():
+    """
+    Shows release and information about the XMM-Newton 
+    Science Analysis System (SAS).
+
+    Raises
+    ------
+    EnvironmentError
+        SAS_DIR is undefined.
+    """
+
     sas_dir = os.environ.get('SAS_DIR')
     if sas_dir == None:
-        print('Error: print_version : SAS_DIR is undefined')
-        sys.exit()
+        raise EnvironmentError('SAS_DIR is undefined.')
 
     sas_path = os.environ.get('SAS_PATH')
     sas_ccfpath = os.environ.get('SAS_CCFPATH')

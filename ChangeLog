@@ -1,7 +1,16 @@
 ChangeLog for pysas
 =================
 
+Version 2.5.0 - 2026-??-?? (RT)
+---------------
+
++ All files : Update and format docstrings to NumPy-style format. Add type hints
+              to all function inputs.
+
++ General bug fixes.
+
 Version 2.4.0 - 2026-03-31 (RT)
+---------------
 
 + param    : Change the logic for parameter parsing. Check if subparameters are
              mandatory based on value of parent parameter.

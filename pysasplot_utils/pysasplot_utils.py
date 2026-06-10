@@ -31,19 +31,25 @@ from matplotlib.collections import PatchCollection
 from matplotlib.ticker import StrMethodFormatter
 import xspec
 
-def plot_spectra_model(spectrum,plot_file_name='spectra_model_plot.png'):
+def plot_spectra_model(spectrum,
+                       plot_file_name: str = 'spectra_model_plot.png'):
     """
     Convenient function to plot a spectrum and XSPEC model.
 
-    Inputs:
-        spectrum - pyXSPEC Spectrum object created using xspec.Spectrum.
-                   Spectrum object must contain at least one model 
-                   created using xspec.Model.
-        plot_file_name - File name of the plot.
-    
-    Returns:
+    Parameters
+    ----------
+    spectrum : spectrum
+        pyXSPEC Spectrum object created using xspec.Spectrum. Spectrum object 
+        must contain at least one model created using xspec.Model.
+    plot_file_name : str, optional
+        File name of the plot. By default 'spectra_model_plot.png'
+
+    Returns
+    -------
+    fig
         Matplotlib figure object and two axis objects.
     """
+    
     xspec.Plot.device='/null'
     xspec.Plot.xAxis = 'keV'
 
@@ -99,18 +105,45 @@ def plot_spectra_model(spectrum,plot_file_name='spectra_model_plot.png'):
 
     return fig, ax0, ax1
 
-def quick_image_plot(image_file,
-                     xlabel = None,
-                     ylabel = None,
-                     title  = None,
-                     vmin   = 1.0,
-                     vmax   = 1e2,
-                     grid   = True,
-                     save_file = False,
-                     out_fname = 'image.png'):
+def quick_image_plot(image_file: str,
+                     xlabel: str = None,
+                     ylabel: str = None,
+                     title: str  = 'FITS Image',
+                     vmin: float | int = 1.0,
+                     vmax: float | int = 1e2,
+                     grid: bool      = True,
+                     save_file: bool = False,
+                     out_fname: str  = 'image.png'):
     """
     Displays a FITS image file. Returns the axis handle.
+
+    Parameters
+    ----------
+    image_file : str
+        Path and name of the FITS image file.
+    xlabel : str, optional
+        X axis label, by default None.
+    ylabel : str, optional
+        Y axis label, by default None.
+    title : str, optional
+        Plot title, by default 'FITS Image'.
+    vmin : float | int, optional
+        Color map minimum value, by default 1.0.
+    vmax : float | int, optional
+        Color map maximum value, by default 100.0.
+    grid : bool, optional
+        Whether to display a grid, by default True.
+    save_file : bool, optional
+        Whether to save the plot as an image, by default False.
+    out_fname : str, optional
+        Name of the plot image file, by default 'image.png'.
+
+    Returns
+    -------
+    axes
+        Plot axis handle.
     """
+    
     hdu = fits.open(image_file)[0]
     wcs = WCS(hdu.header)
 
@@ -125,10 +158,7 @@ def quick_image_plot(image_file,
         plt.xlabel(xlabel)
     if not ylabel is None:
         plt.ylabel(ylabel)
-    if title is None:
-        plt.title(f'FITS Image')
-    else:
-        plt.title(title)
+    plt.title(title)
     
     plt.colorbar()
     plt.show()
@@ -137,15 +167,31 @@ def quick_image_plot(image_file,
 
     return ax
 
-def quick_light_curve_plot(light_curve_file,
-                           tstart = None,
-                           tend   = None,
-                           title  = None,
-                           save_file = False,
-                           out_fname = 'light_curve.png'):
+def quick_light_curve_plot(light_curve_file: str,
+                           tstart: float | int = None,
+                           tend: float | int   = None,
+                           title: str = None,
+                           save_file: bool = False,
+                           out_fname: str  = 'light_curve.png'):
     """
     Plots a light curve from a light curve FITS file.
+
+    Parameters
+    ----------
+    light_curve_file : str
+        Path and name of FITS file.
+    tstart : float | int, optional
+        Lower time bound for plotting, by default None.
+    tend : float | int, optional
+        Upper time bound for plotting, by default None.
+    title : str, optional
+        Plot title, by default None.
+    save_file : bool, optional
+        Whether to save the plot as an image, by default False.
+    out_fname : str, optional
+        Name of the plot image file, by default 'light_curve.png'.
     """
+    
     ts = Table.read(light_curve_file,hdu=1)
     plt.plot(ts['TIME'],ts['RATE'])
     plt.xlabel('Time (s)')
@@ -160,16 +206,30 @@ def quick_light_curve_plot(light_curve_file,
     if save_file:
         plt.savefig(out_fname)
 
-def text_plot(fits_file, extra_text = ''):
+def text_plot(fits_file: str, extra_text: str = ''):
     """
     Prepares the text for the plot reading Keywords from the given FITS file.
+    Reads the following from the FITS file:
+        OBS_ID
+        EXPIDSTR
+        INSTRUME
+        REVOLUT
+        RA_OBJ
+        DEC_OBJ
+        OBJECT
+        DATE-OBS
 
-    Args:
-        fits_file: the path to the FITS file.
-        extra_text: additional text to add to the plot. Empty by default.
+    Parameters
+    ----------
+    fits_file : str
+        The path to the FITS file.
+    extra_text : str, optional
+        additional text to add to the plot, by default ''.
 
-    Output:
-        text_plot: the text as a string to be added to the plot.
+    Returns
+    -------
+    str
+        The text as a string to be added to the plot.
     """
 
     obs = pyutils.get_key_word(fits_file, 'OBS_ID')
@@ -185,18 +245,27 @@ def text_plot(fits_file, extra_text = ''):
 
     return text_plot
 
-def ingest_data(fits_file, in_data, label = 'label'):
+def ingest_data(fits_file: str, 
+                in_data: str, 
+                label: str = 'label'):
     """
     Prepares the data from the input in a key-value, ready to plot with the
     other functions.
 
-    Args:
-        fits_file: the path or the HDU mobject for the fits file.
-        in_data: the data to use. Can by an ndarray object or string-like, as in extension:card.
-        label: the label to address the data.
+    Parameters
+    ----------
+    fits_file : str | HDUList
+        The path or the HDU mobject for the fits file.
+    in_data : str | ndarray
+        The data to use. Can by an ndarray object or string-like, 
+        as in extension:card.
+    label : str, optional
+        The label to address the data, by default 'label'.
 
-    Output:
-        data: the adapted dictionary with the {label:data}
+    Returns
+    -------
+    dict
+        The adapted dictionary with the {label:data}
     """
 
     if isinstance(fits_file, str):
@@ -257,14 +326,18 @@ def ingest_data(fits_file, in_data, label = 'label'):
 
 def is_iterable(py_obj):
     """
-    Given a Python object, will return True or False if it's and iterable object aside
-    from string.
+    Given a Python object, will return True or False if it's and iterable 
+    object aside from string.
 
-    Args:
-        py_obj: the object that has to be evaluated.
+    Parameters
+    ----------
+    py_obj : object
+        The object that has to be evaluated.
 
-    Output:
-        bool: whether or not is iterable.
+    Returns
+    -------
+    bool
+        Whether or not is iterable.
     """
 
     from collections.abc import Iterable
@@ -274,22 +347,34 @@ def is_iterable(py_obj):
     else:
         return False
 
-def get_time_deltas(fits_file, extension = 1, points = 512, x_data = 'TIME', card = 'TIMEDEL'):
+def get_time_deltas(fits_file: str, 
+                    extension: int = 1, 
+                    points: int = 512, 
+                    x_data: str = 'TIME', 
+                    card: str   = 'TIMEDEL'):
     """
     Finds the proper Delta intervals for a FITS file.
 
-    Args:
-        fits_file: the fits file: either the path or one already opened.
-        extension: the extension for the time sereis to be evaluated. 0 by
-    default (primary HDU).
-        points: the final number of points wanted. Default: 512.
-        x_data: the data to evaluate the x-axis delta. TIME by default.
-        card: the card to search in the extension's header. TIMEDEL by default.
+    Parameters
+    ----------
+    fits_file : str | HDUList
+        The fits file: either the path or one already opened (HDUList).
+    extension : int, optional
+        The extension for the time sereis to be evaluated. 
+        By default primary HDU.
+    points : int, optional
+        The final number of points wanted, by default 512.
+    x_data : str, optional
+        The data to evaluate the x-axis delta, by default 'TIME'.
+    card : str, optional
+        The card to search in the extension's header, by default 'TIMEDEL'.
 
-    Ouput:
+    Returns
+    -------
+    tuple
         (DTin, DTout): the initial and final delta time intervals.
         Will return (1, 1) if the file could not be opened or if the extension
-    does not contain a proper TIME data column (implying no rebinning).
+        does not contain a proper TIME data column (implying no rebinning).
     """
     
     if not isinstance(fits_file, Table):
@@ -328,20 +413,36 @@ def get_time_deltas(fits_file, extension = 1, points = 512, x_data = 'TIME', car
 
     return DTin, DTout
 
-def TSrebin(tstable, DTin, DTout, t_xlabel = 'TIME', t_ylabel = 'RATE', t_elabel = 'ERROR', fracexp = 'FRACEXP'):
+def TSrebin(tstable, 
+            DTin: int, 
+            DTout: int, 
+            t_xlabel: str = 'TIME', 
+            t_ylabel: str = 'RATE', 
+            t_elabel: str = 'ERROR', 
+            fracexp: str  = 'FRACEXP'):
     """
-    Re-binning function.
+    Time series re-binning function.
 
-    Input:
-        tstable: time series with TIME, RATE and ERROR columns.
-        DTin: the input bin size.
-        DTout: the output bin size.
-        t_xlabel: the label to search for the x value. TIME by default.
-        t_ylabel: the label to search for the y value. RATE by default.
-        t_elabel: the label to search for the error values. ERROR by default.
-        fracexp: the label to search for the FRACEXP. FRACEXP by default.
+    Parameters
+    ----------
+    tstable : Table | FITS_rec
+        Time series with TIME, RATE and ERROR columns.
+    DTin : int
+        The input bin size.
+    DTout : int
+        The output bin size.
+    t_xlabel : str, optional
+        The label to search for the x value, by default 'TIME'.
+    t_ylabel : str, optional
+        The label to search for the y value, by default 'RATE'.
+    t_elabel : str, optional
+        The label to search for the error values, by default 'ERROR'.
+    fracexp : str, optional
+        The label to search for the FRACEXP, by default 'FRACEXP'.
 
-    Output:
+    Returns
+    -------
+    Table
         ntstable: a Table object with the corrected bin size.
     """
 
@@ -417,14 +518,19 @@ def TSrebin(tstable, DTin, DTout, t_xlabel = 'TIME', t_ylabel = 'RATE', t_elabel
 
     return ntstable
 
-def load_figures(list_of_saved_figs):
+def load_figures(list_of_saved_figs: list):
     """
-    Loads a list of pickled figures (passed as a list of paths) and returns a list of figure objects.
+    Loads a list of pickled figures (passed as a list of paths) and returns a 
+    list of figure objects.
 
-    Args:
-        list_of_saved_figs: a list containing the paths of the pickled figures.
+    Parameters
+    ----------
+    list_of_saved_figs : list
+        A list containing the paths of the pickled figures.
 
-    Output:
+    Returns
+    -------
+    list
         saved_figs: a list of figures.
     """
 
@@ -441,17 +547,25 @@ def load_figures(list_of_saved_figs):
 
     return saved_figs
 
-def saves_in_pdf(fig_list, output_name = 'output', papertype = 'a4'):
+def saves_in_pdf(fig_list: list | tuple, 
+                 output_name: str = 'output', 
+                 papertype: str = 'a4'):
     """
     Saves the given figures into a single pdf file.
 
-    Args:
-        fig_list: a list or tuple containing the Matplotlib elements to be
-    saved into a pdf. Recommended: matplotlib.figure.Figure.
-        output_name: the name for the pdf file.
-        papertype: the paper type for the output. A4 by default.
+    Parameters
+    ----------
+    fig_list : list | tuple
+        A list or tuple containing the Matplotlib elements to be saved into a 
+        pdf. Recommended: matplotlib.figure.Figure.
+    output_name : str, optional
+        The name for the pdf file, by default 'output'.
+    papertype : str, optional
+        The paper type for the output, by default 'a4'
 
-    Output:
+    Returns
+    -------
+    str | None
         the absolute path of the created pdf.
         None if the list is empty or the type of fig_list is not correct.
     """
@@ -482,30 +596,59 @@ def saves_in_pdf(fig_list, output_name = 'output', papertype = 'a4'):
 
     return os.path.abspath('{}'.format(output_name))
 
-def simple_1d_hist(y_data, x_label = 'x', y_label = 'y', add_text = '', scale = '', nbins = 20, sharebins = False, \
-    fits_file = '', fits_info = True, plot_title = '', outformat = 'pdf'):
+def simple_1d_hist(y_data: dict, 
+                   x_label: str  = 'x', 
+                   y_label: str  = 'y', 
+                   add_text: str = '', 
+                   scale: str    = '', 
+                   nbins: int | float = 20, 
+                   sharebins: bool = False, 
+                   fits_file: str  = '', 
+                   fits_info: bool = True, 
+                   plot_title: str = '', 
+                   outformat: str  = 'pdf'):
     """
     Utility for simple 1 dimention histogram.
 
-    Args:
-        y_data: the data for the histogram. Uses the inputs from ingest_data. For example, if fits_file has an input: y_data = ['RATE:RATE', array1, array2...].
-        x_label: the label for the x-axis.
-        y_label: the label for the y-axis.
-        add_text: additional text to add alongside the histogram.
-        scale: the desired scale to adapt the y-data.
-        nbins: the number of bins for the histogram. 20 by default.
-        sharebins: whether or not force all the data to have the same bins distribution.
-        fits_file = the fits file to use (if any).
-        fits_info: Bool. Whether or not show basic info from the FITS file.
-        plot_title: the title of the plot.
-        outformat: the format (according to matplotlib. PDF by default.
+    Parameters
+    ----------
+    y_data : dict
+        The data for the histogram. Uses the inputs from ingest_data. 
+        For example, if fits_file has an input: 
+        y_data = ['RATE:RATE', array1, array2...].
+    x_label : str, optional
+        The label for the x-axis, by default 'x'.
+    y_label : str, optional
+        The label for the y-axis, by default 'y'.
+    add_text : str, optional
+        Additional text to add alongside the histogram, by default ''.
+    scale : str, optional
+        The desired scale to adapt the y-data, by default ''.
+    nbins : int | float, optional
+        The number of bins for the histogram, by default 20.
+    sharebins : bool, optional
+        Whether or not force all the data to have the same bins distribution, 
+        by default False.
+    fits_file : str, optional
+        The fits file to use (if any), by default ''.
+    fits_info : bool, optional
+        Whether or not show basic info from the FITS file, by default True.
+    plot_title : str, optional
+        The title of the plot, by default ''.
+    outformat : str, optional
+        The format (according to matplotlib), by default 'pdf'.
+    
+    Returns
+    -------
+    Figure
+        Matplotlib figure handle.
     """
 
     plt.style.use('ggplot')
     y_data = ingest_data(fits_file, y_data, y_label)
 
-#    if y_data_errors != '':
-#        y_data_errors = ingest_data(fits_file, y_data_errors, y_label)
+    # if y_data_errors != '':
+    #   y_data_errors = ingest_data(fits_file, y_data_errors, y_label)
 
     fig = plt.figure(figsize = (16, 9), facecolor = 'white')
 
@@ -581,8 +724,19 @@ def simple_1d_hist(y_data, x_label = 'x', y_label = 'y', add_text = '', scale = 
 
     return fig
 
-def simple_2d_plot(x_data, y_data, x_data_errors = '', y_data_errors = '', plot_title = '', x_label = 'x', y_label = 'y', fits_file = '', fits_info = True, \
-    add_text = '', scale = '', points = 512, outformat = 'png'):
+def simple_2d_plot(x_data: dict, 
+                   y_data: dict, 
+                   x_data_errors: dict | str = '', 
+                   y_data_errors: dict | str = '', 
+                   plot_title: str = '', 
+                   x_label: str = 'x', 
+                   y_label: str = 'y', 
+                   fits_file: str = '', 
+                   fits_info: bool = True, 
+                   add_text: str = '', 
+                   scale: str = '', 
+                   points: int | float = 512, 
+                   outformat: str = 'png'):
     """
     Utility for simple 2 dimentional plots. The data can be:
         from FITS files, written as in EXT:CARD.
@@ -593,23 +747,44 @@ def simple_2d_plot(x_data, y_data, x_data_errors = '', y_data_errors = '', plot_
     extension and card data. Introduce first this information and leave the
     other type of arrays for last.
 
-    Args:
-        x_data: the x coordiantes of the data.
-        y_data: the y coordinates of the data.
-        x_data_errors: errors for the x axis.
-        y_data_errors: errors for the y axis.
-        plot_title: title for the plot. Will be used also when writting the file.
-        x_label: label for the x axis. x by default.
-        y_label: label for the y axis. y by default.
-        fits_file: only needed if requesting an extension:card in one of the data inputs.
-        add_text: additional text to add. None by default.
-        scale: the scale to apply.
-        points: the number of points. Required in case of rebinning.
-        outformat: the format for the output.
+    Parameters
+    ----------
+    x_data : dict
+        The x coordiantes of the data from either ingest_table or ingest_data.
+    y_data : dict
+        The y coordinates of the data from either ingest_table or ingest_data.
+    x_data_errors : dict | str, optional
+        Errors for the x axis, by default ''.
+    y_data_errors : dict | str, optional
+        Errors for the y axis, by default ''.
+    plot_title : str, optional
+        Title for the plot. Will be used also when writting the file, 
+        by default ''.
+    x_label : str, optional
+        Label for the x axis, by default 'x'.
+    y_label : str, optional
+        Label for the y axis, by default 'y'.
+    fits_file : str, optional
+        Only needed if requesting an extension:card in one of the data inputs, 
+        by default ''.
+    fits_info : bool, optional
+        Whether to use info from fits file, by default True.
+    add_text : str, optional
+        Additional text to add, by default ''.
+    scale : str, optional
+        The scale to apply, by default ''.
+    points : int | float, optional
+        The number of points. Required in case of rebinning, by default 512.
+    outformat : str, optional
+        The format for the output, by default 'png'.
+
+    Returns
+    -------
+    Figure
+        Matplotlib figure handle.
     """
 
     plt.style.use('ggplot')
-
 
     if isinstance(fits_file, Table):
         x_data, y_data, x_data_errors, y_data_errors = ingest_table(fits_file, points, x_data, y_data, x_error_label = x_data_errors, y_errors_label = y_data_errors)
@@ -714,23 +889,37 @@ def simple_2d_plot(x_data, y_data, x_data_errors = '', y_data_errors = '', plot_
 
     return fig
 
-def ingest_table(table, points, x_label, y_labels, x_error_label = None, y_errors_label = None):
+def ingest_table(table, 
+                 points: int | float, 
+                 x_label: str, 
+                 y_labels: str, 
+                 x_error_label: str = None, 
+                 y_errors_label: str = None):
     """
     Ingest the data from a given table and returns the data using Python
     dictionaries with labels. Only labels from the table are supported.
 
-    Args:
-        table: the table object.
-        points: the number of points wanted. A rebinning will be applied to the table.
-        x_label: the label for the x axis.
-        y_labels: the label (or array of labels) for the y data.
-        x_error_label: the label for the error for the x-coordinates.
-        y_error_labels: the label (or array of labels) for the error of the
-    y-coordinates.
-
-    Output:
+    Parameters
+    ----------
+    table : Table
+        The table object.
+    points : int | float
+        The number of points wanted. A rebinning will be applied to the table.
+    x_label : str
+        The label for the x axis.
+    y_labels : str
+        The label (or array of labels) for the y data.
+    x_error_label : str, optional
+        The label for the error for the x-coordinates, by default None.
+    y_errors_label : str, optional
+        The label (or array of labels) for the error of the y-coordinates, 
+        by default None.
+    
+    Returns
+    -------
+    tuple
         (x_data, y_data, x_error, y_data_errors): set of dictionaries containing
-    the information from the table.
+        the information from the table.
     """
 
     DTin, DTout = get_time_deltas(table, 1, points)
@@ -776,15 +965,21 @@ def ingest_table(table, points, x_label, y_labels, x_error_label = None, y_error
 
     return(x_data, y_data, x_error, y_error)
 
-def merge_pdf(pdf_files, output_file):
+def merge_pdf(pdf_files: list | tuple, 
+              output_file: str):
     """
-    Merges several PDF files passed as the arguments. 
-    
-    Args:
-        pdf_files: list or tuple containing the paths to the pdfs.
-        output_file: the name of output file.
+    Merges several PDF files passed as the arguments.
 
-    Output:
+    Parameters
+    ----------
+    pdf_files : list | tuple
+        List or tuple containing the paths to the pdfs.
+    output_file : str
+        The name of output file.
+
+    Returns
+    -------
+    int
         1 depending on whether or not the process has been completed; 0 if not.
     """
 
@@ -812,17 +1007,25 @@ def merge_pdf(pdf_files, output_file):
 
     return 1
 
-def plot_image(path_to_image, ext = 0, output = None):
+def plot_image(path_to_image: str, 
+               ext: int = 0, 
+               output: str = None):
     """
     Plots and saves an image corresponding to a FITS image.
 
-    Args:
-        path_to_image: the path to the FITS file.
-        ext: the extension of the image in the FITS file. 0 by default.
-        output: None by default. Whethere or not save the image.
+    Parameters
+    ----------
+    path_to_image : str
+        The path to the FITS file.
+    ext : int, optional
+        The extension of the image in the FITS file, by default 0.
+    output : str, optional
+        Output file name, by default None.
 
-    Output:
-        0 when finished.
+    Returns
+    -------
+    int
+        Returns 0 if sucessful
     """
 
     with fits.open(path_to_image) as img:
@@ -841,15 +1044,19 @@ def plot_image(path_to_image, ext = 0, output = None):
 
     return 0
 
-def check_format_compatibility(out_format):
+def check_format_compatibility(out_format: str):
     """
     Checks if the input format is available as a matplotlib backend format.
 
-    Args:
-        out_format: the format to be checkec.
+    Parameters
+    ----------
+    out_format : str
+        The format to be checked.
 
-    Output:
-        bool: whether or not the format can be used.
+    Returns
+    -------
+    bool
+        .whether or not the format can be used.
     """
 
     format_list = ('PNG', 'PDF', 'PGF', 'EPS', 'SVG2', 'RGBA', 'RAW', 'PS', 'SVG')
@@ -859,25 +1066,49 @@ def check_format_compatibility(out_format):
     else:
         return False
 
-def plot_region_box(ax, x1, y1, width, height, angle = 0, fill = False, colour = 'green', text = None, transform = None):
-    '''
+def plot_region_box(ax, 
+                    x1: float, 
+                    y1: float, 
+                    width: float, 
+                    height: float, 
+                    angle: float = 0, 
+                    fill: bool   = False, 
+                    colour: str  = 'green', 
+                    text: str    = None, 
+                    transform = None):
+    """
     Returns an axis object with with a box region printed on it.
 
-    Args:
-        ax: the original axis to use for the plot.
-        x1: the starting x coordinate for the box.
-        y1: the starting y coordinate for the box.
-        width: the width of the box.
-        height: the heigth of the box.
-        angle: the angle of the box (if any). 0 by default.
-        fill: boolean. Whether or not fill the box.
-        colour: the colour of the box and the fill (if fill = True).
-        text: None by default. Text to add at the (x1, y1) coordinates.
-        transform: None by default. The transformation for the axis. Must be comatible with matplotlib standards.
+    Parameters
+    ----------
+    ax : Axes
+        The original axis to use for the plot.
+    x1 : float
+        The starting x coordinate for the box.
+    y1 : float
+        The starting y coordinate for the box.
+    width : float
+        The width of the box.
+    height : float
+        The heigth of the box.
+    angle : float, optional
+        The angle of the box (if any), by default 0.
+    fill : bool, optional
+        Whether or not fill the box, by default False.
+    colour : str, optional
+        The colour of the box and the fill (if fill = True), 
+        by default 'green'.
+    text : str, optional
+        Text to add at the (x1, y1) coordinates, by default None.
+    transform : transAxes, optional
+        The transformation for the axis. Must be comatible with matplotlib 
+        standards, by default None.
 
-    Output:
-        f_ax: the axis after plotting the box.
-    '''
+    Returns
+    -------
+    Axes
+        The axis handle after plotting the box.
+    """
      
     rec = Rectangle((x1, y1), width, height, angle, fill = fill, transform = transform, color = colour)
     
@@ -893,18 +1124,23 @@ def plot_region_box(ax, x1, y1, width, height, angle = 0, fill = False, colour =
     
     return None
 
-def reg_to_list(reg):
-    ''' 
-    Gets the information from a region based on the input string (based on ds9 formatting).
+def reg_to_list(reg: str):
+    """
+    Gets the information from a region based on the input string 
+    (based on ds9 formatting).
 
-    So far, only tested for BOX regions.
+    So far, only tested for BOX regions. TODO: must be useful for all shapes. 
 
-    Args:
-        reg: the region string in ds9 standards.
+    Parameters
+    ----------
+    reg : str
+        The region string in ds9 standards
 
-    Output:
-        TODO: must be useful for all shapes. 
-    ''' 
+    Returns
+    -------
+    tuple
+        Region information.
+    """
     
     shape_info, shape_details = reg.split('#') 
     shape_info = shape_info.strip().rstrip() 
@@ -941,6 +1177,5 @@ def reg_to_list(reg):
         text = None
     else: 
         text = shape_details[shape_details.find('TEXT') + 6: shape_details.find('}')]
-            
             
     return (polygon, float(x1), float(y1), float(width), float(heigth), float(angle), colour, text)

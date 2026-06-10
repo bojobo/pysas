@@ -19,11 +19,21 @@
 #
 
 # pySAS version
-VERSION = '2.4.3'
+VERSION = '2.4.4'
 
 import subprocess, os, sys
 
 def get_sas_version():
+    """
+    Function to return information about the SAS version. Runs 'sasversion' and
+    parses the output.
+
+    Returns
+    -------
+    list
+        List of SAS version information.
+    """
+
     sas_dir = os.environ.get('SAS_DIR')
     if sas_dir == None:
         print('Error: SAS_DIR is undefined')
