@@ -1911,13 +1911,13 @@ class ObsID(FileMain):
         """
         Function to do all basic analysis tasks. The function will:
 
-            1. Download data by calling 'download_data'
+            1. Download data by calling 'download_ODF_data'
             2. Call the function 'calibrate_odf'
                 A. Run 'cifbuild'
                 B. Run 'odfingest'
-            2. Run 'epproc' -OR- 'epchain'
-            3. Run 'emproc' -OR- 'emchain'
-            4. Run 'rgsproc'
+            3. Run 'epproc' -OR- 'epchain'
+            4. Run 'emproc' -OR- 'emchain'
+            5. Run 'rgsproc'
 
         If 'run_epchain' is set to 'True', then 'epproc' will not run.
         If 'run_emchain' is set to 'True', then 'emproc' will not run.
